@@ -1,0 +1,52 @@
+#pragma kernel Gradient
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture3D<float4> ResultingVelocity;
+RWTexture3D<float> Pressure;
+RWTexture3D<float4> Velocity;
+int N;
+
+[numthreads(8,8,8)]
+void Gradient (uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    Velocity.GetDimensions(width, height, depth);
+    float3 currentVelocity = Velocity.Load(int3(id.x, id.y, id.z)).xyz;
+
+    float rightPressure, leftPressure, topPressure, bottomPressure, backPressure, frontPressure;
+
+    if (id.x + 1 < width)
+        rightPressure = Pressure.Load(int3(id.x + 1, id.y, id.z));
+    else
+        rightPressure = Pressure.Load(int3(id.x, id.y, id.z));
+
+    if (id.x > 0)
+        leftPressure = Pressure.Load(int3(id.x - 1, id.y, id.z));
+    else
+        leftPressure = Pressure.Load(int3(id.x, id.y, id.z));
+
+    if (id.y + 1 < height)
+        topPressure = Pressure.Load(int3(id.x, id.y + 1, id.z));
+    else
+        topPressure = Pressure.Load(int3(id.x, id.y, id.z));
+
+    if (id.y > 0)
+        bottomPressure = Pressure.Load(int3(id.x, id.y - 1, id.z));
+    else
+        bottomPressure = Pressure.Load(int3(id.x, id.y, id.z));
+
+    if (id.z + 1 < depth)
+        backPressure = Pressure.Load(int3(id.x, id.y, id.z + 1));
+    else
+        backPressure = Pressure.Load(int3(id.x, id.y, id.z));
+
+    if (id.z > 0)
+        frontPressure = Pressure.Load(int3(id.x, id.y, id.z - 1));
+    else
+        frontPressure = Pressure.Load(int3(id.x, id.y, id.z));
+
+    float3 pressureGradient = float3(rightPressure - leftPressure, topPressure - bottomPressure, backPressure - frontPressure);
+
+    ResultingVelocity[id.xyz] = float4(currentVelocity - 0.5f * pressureGradient / N, 0.0f);
+}

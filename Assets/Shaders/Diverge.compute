@@ -1,0 +1,59 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Diverge
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture3D<float4> Divergence;
+RWTexture3D<float4> Velocity;
+int N;
+[numthreads(8,8,8)]
+void Diverge(uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    Velocity.GetDimensions(width, height, depth);
+
+    float rightX = 0.0f;
+    float leftX = 0.0f;
+    float topY = 0.0f;
+    float bottomY = 0.0f;
+    float backZ = 0.0f;
+    float frontZ = 0.0f;
+
+    if (id.x + 1 < width)
+        rightX = Velocity.Load(int3(id.x + 1, id.y, id.z)).x;
+    else
+        rightX = Velocity.Load(int3(id.x, id.y, id.z)).x;
+
+    if (id.x > 0)
+        leftX = Velocity.Load(int3(id.x - 1, id.y, id.z)).x;
+    else
+        leftX = Velocity.Load(int3(id.x, id.y, id.z)).x;
+
+    if (id.y + 1 < height)
+        topY = Velocity.Load(int3(id.x, id.y + 1, id.z)).y;
+    else
+        topY = Velocity.Load(int3(id.x, id.y, id.z)).y;
+
+    if (id.y > 0)
+        bottomY = Velocity.Load(int3(id.x, id.y - 1, id.z)).y;
+    else
+        bottomY = Velocity.Load(int3(id.x, id.y, id.z)).y;
+
+    if (id.z + 1 < depth)
+        backZ = Velocity.Load(int3(id.x, id.y, id.z + 1)).z;
+    else
+        backZ = Velocity.Load(int3(id.x, id.y, id.z)).z;
+
+    if (id.z > 0)
+        frontZ = Velocity.Load(int3(id.x, id.y, id.z-1)).z;
+    else
+        frontZ = Velocity.Load(int3(id.x, id.y, id.z)).z;
+
+    Divergence[id.xyz] = -0.5f * (rightX - leftX + topY - bottomY + backZ - frontZ) / N;
+}
+
+
+
+
+
+

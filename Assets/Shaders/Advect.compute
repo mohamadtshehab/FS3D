@@ -1,0 +1,63 @@
+
+#pragma kernel Advect
+
+RWTexture3D<float4> Quantity;
+RWTexture3D<float4> ToAdvectQuantity;
+RWTexture3D<float4> ToAdvectOverVelocity;
+float TimeStep;
+int N;
+
+[numthreads(8,8,8)]
+void Advect (uint3 id : SV_DispatchThreadID)
+{
+    float dtx = TimeStep * (N - 2);
+    float dty = TimeStep * (N - 2);
+    float dtz = TimeStep * (N - 2);
+
+    float3 dt = float3(dtx, dty, dtz);
+    float nFloat = N;
+    float3 coordinates = id.xyz;
+    float3 XYZ = coordinates -  dt * ToAdvectOverVelocity.Load(int3(coordinates));
+
+    if (XYZ.x < 0.5f) XYZ.x = 0.5f;
+    if (XYZ.x > nFloat + 0.5f) XYZ.x = nFloat + 0.5f;
+    int i0 = floor(XYZ.x);
+    int i1 = i0 + 1;
+
+    if (XYZ.y < 0.5f) XYZ.y = 0.5f;
+    if (XYZ.y > nFloat + 0.5f) XYZ.y = nFloat + 0.5f;
+    int j0 = floor(XYZ.y);
+    int j1 = j0 + 1;
+
+    if (XYZ.z < 0.5f) XYZ.z = 0.5f;
+    if (XYZ.z > nFloat + 0.5f) XYZ.z = nFloat + 0.5f;
+    int k0 = floor(XYZ.z);
+    int k1 = k0 + 1;
+
+    float s1 = XYZ.x - i0;
+    float s0 = 1.0f - s1;
+    float t1 = XYZ.y - j0;
+    float t0 = 1.0f - t1;
+    float u1 = XYZ.z - k0;
+    float u0 = 1.0f - u1;
+
+
+    float4 QuantityI0J0K0 = ToAdvectQuantity.Load(int3(i0, j0, k0));
+    float4 QuantityI0J0K1 = ToAdvectQuantity.Load(int3(i0, j0, k1));
+    float4 QuantityI0J1K0 = ToAdvectQuantity.Load(int3(i0, j1, k0));
+    float4 QuantityI0J1K1 = ToAdvectQuantity.Load(int3(i0, j1, k1));
+    float4 QuantityI1J0K0 = ToAdvectQuantity.Load(int3(i1, j0, k0));
+    float4 QuantityI1J0K1 = ToAdvectQuantity.Load(int3(i1, j0, k1));
+    float4 QuantityI1J1K0 = ToAdvectQuantity.Load(int3(i1, j1, k0));
+    float4 QuantityI1J1K1 = ToAdvectQuantity.Load(int3(i1, j1, k1));
+
+    Quantity[id.xyz] = 
+        s0 * (t0 * (u0 * QuantityI0J0K0 + u1 * QuantityI0J0K1) +
+              t1 * (u0 * QuantityI0J1K0 + u1 * QuantityI0J1K1)) +
+        s1 * (t0 * (u0 * QuantityI1J0K0 + u1 * QuantityI1J0K1) +
+              t1 * (u0 * QuantityI1J1K0 + u1 * QuantityI1J1K1));
+
+}
+
+
+
