@@ -1,0 +1,61 @@
+#pragma kernel Solve
+
+RWTexture3D<float4> Solution;
+RWTexture3D<float4> X;
+RWTexture3D<float4> X0;
+float A;
+float C;
+int Iterations;
+int N;
+
+[numthreads(8,8,8)]
+void Solve(RWTexture3D<float4> s, RWTexture3D<float4> x, uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    X0.GetDimensions(width, height, depth);
+
+    float cRecip = 1.0f / C;
+
+    float4 q0C = X0.Load(int3(id.x, id.y, id.z));
+    float4 qRight = float4(0, 0, 0, 0);
+    float4 qLeft = float4(0, 0, 0, 0);
+    float4 qTop = float4(0, 0, 0, 0);
+    float4 qBottom = float4(0, 0, 0, 0);
+    float4 qBack = float4(0, 0, 0, 0);
+    float4 qFront = float4(0, 0, 0, 0);
+
+    if (id.x + 1 < width)
+        qRight = x.Load(int3(id.x + 1, id.y, id.z));
+    if (id.x > 0)
+        qLeft = x.Load(int3(id.x - 1, id.y, id.z));
+    if (id.y + 1 < height)
+        qTop = x.Load(int3(id.x, id.y + 1, id.z));
+    if (id.y > 0)
+        qBottom = x.Load(int3(id.x, id.y - 1, id.z));
+    if (id.z + 1 < depth)
+        qBack = x.Load(int3(id.x, id.y, id.z + 1));
+    if (id.z > 0)
+        qFront = x.Load(int3(id.x, id.y, id.z - 1));
+
+    float4 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qBack + qFront)) * cRecip;
+    s[id.xyz] = newValue;
+}
+
+
+void loop()
+{
+    uint id;
+    for (int i = 0 ; i < Iterations ; i++)
+    {
+        bool ping = true;
+        if (ping)
+        {
+            Solve(Solution, X, id);
+        }
+        else
+        {
+            Solve(X, Solution, id);
+        }
+        ping = !ping;
+    }
+}

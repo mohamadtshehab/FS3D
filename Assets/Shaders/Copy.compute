@@ -1,0 +1,13 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Copy
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture3D<float4> Target;
+RWTexture3D<float4> Source;
+
+[numthreads(8, 8, 8)]
+void Copy (uint3 id : SV_DispatchThreadID)
+{
+    Target[id.xyz] = Source.Load(int3(id.x, id.y, id.z));
+}
