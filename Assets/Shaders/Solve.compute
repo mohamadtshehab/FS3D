@@ -1,61 +1,42 @@
 #pragma kernel Solve
 
-RWTexture3D<float4> Solution;
-RWTexture3D<float4> X;
-RWTexture3D<float4> X0;
+RWStructuredBuffer<float3> Solution;
+RWStructuredBuffer<float3> X;
+StructuredBuffer<float3> X0;
 float A;
 float C;
 int Iterations;
 int N;
 
-[numthreads(8,8,8)]
-void Solve(RWTexture3D<float4> s, RWTexture3D<float4> x, uint3 id : SV_DispatchThreadID)
-{
-    uint width, height, depth;
-    X0.GetDimensions(width, height, depth);
-
-    float cRecip = 1.0f / C;
-
-    float4 q0C = X0.Load(int3(id.x, id.y, id.z));
-    float4 qRight = float4(0, 0, 0, 0);
-    float4 qLeft = float4(0, 0, 0, 0);
-    float4 qTop = float4(0, 0, 0, 0);
-    float4 qBottom = float4(0, 0, 0, 0);
-    float4 qBack = float4(0, 0, 0, 0);
-    float4 qFront = float4(0, 0, 0, 0);
-
-    if (id.x + 1 < width)
-        qRight = x.Load(int3(id.x + 1, id.y, id.z));
-    if (id.x > 0)
-        qLeft = x.Load(int3(id.x - 1, id.y, id.z));
-    if (id.y + 1 < height)
-        qTop = x.Load(int3(id.x, id.y + 1, id.z));
-    if (id.y > 0)
-        qBottom = x.Load(int3(id.x, id.y - 1, id.z));
-    if (id.z + 1 < depth)
-        qBack = x.Load(int3(id.x, id.y, id.z + 1));
-    if (id.z > 0)
-        qFront = x.Load(int3(id.x, id.y, id.z - 1));
-
-    float4 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qBack + qFront)) * cRecip;
-    s[id.xyz] = newValue;
+int index(int x, int y, int z) {
+    return (x) + (y) * (N) + (z) * (N) * (N);
 }
 
+[numthreads(8, 8, 8)]
+void Solve(uint3 id : SV_DispatchThreadID) {
+    float cRecip = 1.0f / C;
 
-void loop()
-{
-    uint id;
-    for (int i = 0 ; i < Iterations ; i++)
-    {
-        bool ping = true;
-        if (ping)
-        {
-            Solve(Solution, X, id);
-        }
-        else
-        {
-            Solve(X, Solution, id);
-        }
-        ping = !ping;
-    }
+    float3 q0C = X0[index(id.x, id.y, id.z)];
+    float3 qRight = float3(0, 0, 0);
+    float3 qLeft = float3(0, 0, 0);
+    float3 qTop = float3(0, 0, 0);
+    float3 qBottom = float3(0, 0, 0);
+    float3 qBack = float3(0, 0, 0);
+    float3 qFront = float3(0, 0, 0);
+
+    if (id.x + 1 < N)
+        qRight = X[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = X[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = X[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = X[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qBack = X[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qFront = X[index(id.x, id.y, id.z - 1)];
+
+    float3 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qBack + qFront)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
 }

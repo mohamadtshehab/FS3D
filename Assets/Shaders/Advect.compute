@@ -1,11 +1,15 @@
 
 #pragma kernel Advect
 
-RWTexture3D<float4> Quantity;
-RWTexture3D<float4> ToAdvectQuantity;
-RWTexture3D<float4> ToAdvectOverVelocity;
+RWStructuredBuffer<float3> Quantity;
+StructuredBuffer<float3> ToAdvectQuantity;
+StructuredBuffer<float3> ToAdvectOverVelocity;
 float TimeStep;
 int N;
+
+int index(int x, int y, int z){
+    return (x) + (y) *(N) + (z) * (N) * (N);
+    }
 
 [numthreads(8,8,8)]
 void Advect (uint3 id : SV_DispatchThreadID)
@@ -17,7 +21,7 @@ void Advect (uint3 id : SV_DispatchThreadID)
     float3 dt = float3(dtx, dty, dtz);
     float nFloat = N;
     float3 coordinates = id.xyz;
-    float3 XYZ = coordinates -  dt * ToAdvectOverVelocity.Load(int3(coordinates));
+    float3 XYZ = coordinates -  dt * ToAdvectOverVelocity[index(id.x, id.y, id.z)];
 
     if (XYZ.x < 0.5f) XYZ.x = 0.5f;
     if (XYZ.x > nFloat + 0.5f) XYZ.x = nFloat + 0.5f;
@@ -42,22 +46,21 @@ void Advect (uint3 id : SV_DispatchThreadID)
     float u0 = 1.0f - u1;
 
 
-    float4 QuantityI0J0K0 = ToAdvectQuantity.Load(int3(i0, j0, k0));
-    float4 QuantityI0J0K1 = ToAdvectQuantity.Load(int3(i0, j0, k1));
-    float4 QuantityI0J1K0 = ToAdvectQuantity.Load(int3(i0, j1, k0));
-    float4 QuantityI0J1K1 = ToAdvectQuantity.Load(int3(i0, j1, k1));
-    float4 QuantityI1J0K0 = ToAdvectQuantity.Load(int3(i1, j0, k0));
-    float4 QuantityI1J0K1 = ToAdvectQuantity.Load(int3(i1, j0, k1));
-    float4 QuantityI1J1K0 = ToAdvectQuantity.Load(int3(i1, j1, k0));
-    float4 QuantityI1J1K1 = ToAdvectQuantity.Load(int3(i1, j1, k1));
-
-    Quantity[id.xyz] = 
+    float3 QuantityI0J0K1 = ToAdvectQuantity[index(i0, j0, k1)];
+    float3 QuantityI0J1K0 = ToAdvectQuantity[index(i0, j1, k0)];
+    float3 QuantityI0J1K1 = ToAdvectQuantity[index(i0, j1, k1)];
+    float3 QuantityI1J0K0 = ToAdvectQuantity[index(i1, j0, k0)];
+    float3 QuantityI1J0K1 = ToAdvectQuantity[index(i1, j0, k1)];
+    float3 QuantityI1J1K0 = ToAdvectQuantity[index(i1, j1, k0)];
+    float3 QuantityI1J1K1 = ToAdvectQuantity[index(i1, j1, k1)];
+    float3 QuantityI0J0K0 = ToAdvectQuantity[index(i0, j0, k0)];
+         
+    Quantity[index(id.x, id.y, id.z)] = 
         s0 * (t0 * (u0 * QuantityI0J0K0 + u1 * QuantityI0J0K1) +
               t1 * (u0 * QuantityI0J1K0 + u1 * QuantityI0J1K1)) +
         s1 * (t0 * (u0 * QuantityI1J0K0 + u1 * QuantityI1J0K1) +
               t1 * (u0 * QuantityI1J1K0 + u1 * QuantityI1J1K1));
 
 }
-
 
 

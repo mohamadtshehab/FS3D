@@ -1,16 +1,17 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel Copy
+#pragma kernel RenderizeDensity
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
-RWStructuredBuffer<float3> Target;
+RWTexture3D<float3> Target;
 StructuredBuffer<float3> Source;
 int N;
+
 int index(int x, int y, int z){
     return (x) + (y) *(N) + (z) * (N) * (N);
     }
 [numthreads(8, 8, 8)]
-void Copy (uint3 id : SV_DispatchThreadID)
+void RenderizeDensity (uint3 id : SV_DispatchThreadID)
 {
-    Target[index(id.x, id.y, id.z)] = Source[index(id.x, id.y, id.z)];
+    Target[id] = Source[index(id.x, id.y, id.z)];
 }
