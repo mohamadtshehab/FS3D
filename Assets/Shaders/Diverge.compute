@@ -7,48 +7,37 @@ RWStructuredBuffer<float3> Divergence;
 StructuredBuffer<float3> Velocity;
 int N;
 
-int index(int x, int y, int z){
-    return (x) + (y) *(N) + (z) * (N) * (N);
+int index(int x, int y){
+    return (x) + (y) *(N);
     }
-[numthreads(8,8,8)]
+[numthreads(8,8,1)]
 void Diverge(uint3 id : SV_DispatchThreadID)
 {
     float rightX = 0.0f;
     float leftX = 0.0f;
     float topY = 0.0f;
     float bottomY = 0.0f;
-    float backZ = 0.0f;
-    float frontZ = 0.0f;
 
     if (id.x + 1 < N)
-        rightX = Velocity[index(id.x + 1, id.y, id.z)].x;
+        rightX = Velocity[index(id.x + 1, id.y)].x;
     else
-        rightX = Velocity[index(id.x, id.y, id.z)].x;
+        rightX = Velocity[index(id.x, id.y)].x;
 
     if (id.x > 0)
-        leftX = Velocity[index(id.x - 1, id.y, id.z)].x;
+        leftX = Velocity[index(id.x - 1, id.y)].x;
     else
-        leftX = Velocity[index(id.x, id.y, id.z)].x;
+        leftX = Velocity[index(id.x, id.y)].x;
 
     if (id.y + 1 < N)
-        topY = Velocity[index(id.x, id.y + 1, id.z)].y;
+        topY = Velocity[index(id.x, id.y + 1)].y;
     else
-        topY = Velocity[index(id.x, id.y, id.z)].y;
+        topY = Velocity[index(id.x, id.y)].y;
 
     if (id.y > 0)
-        bottomY = Velocity[index(id.x, id.y - 1, id.z)].y;
+        bottomY = Velocity[index(id.x, id.y - 1)].y;
     else
-        bottomY = Velocity[index(id.x, id.y, id.z)].y;
+        bottomY = Velocity[index(id.x, id.y)].y;
 
-    if (id.z + 1 < N)
-        backZ = Velocity[index(id.x, id.y, id.z + 1)].z;
-    else
-        backZ = Velocity[index(id.x, id.y, id.z)].z;
 
-    if (id.z > 0)
-        frontZ = Velocity[index(id.x, id.y, id.z-1)].z;
-    else
-        frontZ = Velocity[index(id.x, id.y, id.z)].z;
-
-    Divergence[index(id.x, id.y, id.z)] = -0.5f * (rightX - leftX + topY - bottomY + backZ - frontZ) / N;
+    Divergence[index(id.x, id.y)] = -0.5f * (rightX - leftX + topY - bottomY) / N;
 }

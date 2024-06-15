@@ -12,31 +12,38 @@ int index(int x, int y, int z) {
     return (x) + (y) * (N) + (z) * (N) * (N);
 }
 
-[numthreads(8, 8, 8)]
+[numthreads(8, 8, 1)]
 void Solve(uint3 id : SV_DispatchThreadID) {
+    int z = id.z;
+    if (id.x >= N || id.y >= N || z >= N)
+        return;
+
     float cRecip = 1.0f / C;
 
-    float3 q0C = X0[index(id.x, id.y, id.z)];
-    float3 qRight = float3(0, 0, 0);
-    float3 qLeft = float3(0, 0, 0);
-    float3 qTop = float3(0, 0, 0);
-    float3 qBottom = float3(0, 0, 0);
-    float3 qBack = float3(0, 0, 0);
-    float3 qFront = float3(0, 0, 0);
+    for (int iter = 0; iter < Iterations; ++iter) {
+        float3 q0C = X0[index(id.x, id.y, z)];
+        float3 qRight = float3(0, 0, 0);
+        float3 qLeft = float3(0, 0, 0);
+        float3 qTop = float3(0, 0, 0);
+        float3 qBottom = float3(0, 0, 0);
+        float3 qBack = float3(0, 0, 0);
+        float3 qFront = float3(0, 0, 0);
 
-    if (id.x + 1 < N)
-        qRight = X[index(id.x + 1, id.y, id.z)];
-    if (id.x > 0)
-        qLeft = X[index(id.x - 1, id.y, id.z)];
-    if (id.y + 1 < N)
-        qTop = X[index(id.x, id.y + 1, id.z)];
-    if (id.y > 0)
-        qBottom = X[index(id.x, id.y - 1, id.z)];
-    if (id.z + 1 < N)
-        qBack = X[index(id.x, id.y, id.z + 1)];
-    if (id.z > 0)
-        qFront = X[index(id.x, id.y, id.z - 1)];
+        if (id.x + 1 < N)
+            qRight = X[index(id.x + 1, id.y, z)];
+        if (id.x > 0)
+            qLeft = X[index(id.x - 1, id.y, z)];
+        if (id.y + 1 < N)
+            qTop = X[index(id.x, id.y + 1, z)];
+        if (id.y > 0)
+            qBottom = X[index(id.x, id.y - 1, z)];
+        if (z + 1 < N)
+            qFront = X[index(id.x, id.y, z + 1)];
+        if (z > 0)
+            qBack = X[index(id.x, id.y, z - 1)];
 
-    float3 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qBack + qFront)) * cRecip;
-    Solution[index(id.x, id.y, id.z)] = newValue;
+        float3 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+        Solution[index(id.x, id.y, z)] = newValue;
+        X[index(id.x, id.y, z)] = newValue;
+    }
 }

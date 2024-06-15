@@ -7,49 +7,40 @@ StructuredBuffer<float3> Pressure;
 StructuredBuffer<float3> Velocity;
 int N;
 
-int index(int x, int y, int z){
-    return (x) + (y) *(N) + (z) * (N) * (N);
+int index(int x, int y){
+    return (x) + (y) *(N);
     }
 
-[numthreads(8,8,8)]
+[numthreads(8,8,1)]
 void Gradient (uint3 id : SV_DispatchThreadID)
 {
-    float3 currentVelocity = Velocity[index(id.x, id.y, id.z)];
+    float3 currentVelocity = Velocity[index(id.x, id.y)];
 
-    float rightPressure, leftPressure, topPressure, bottomPressure, backPressure, frontPressure;
+    float rightPressure, leftPressure, topPressure, bottomPressure;
 
     if (id.x + 1 < N)
-        rightPressure = Pressure[index(id.x + 1, id.y, id.z)].x;
+        rightPressure = Pressure[index(id.x + 1, id.y)].x;
     else
-        rightPressure = Pressure[index(id.x, id.y, id.z)].x;
+        rightPressure = Pressure[index(id.x, id.y)].x;
 
     if (id.x > 0)
-        leftPressure = Pressure[index(id.x - 1, id.y, id.z)].x;
+        leftPressure = Pressure[index(id.x - 1, id.y)].x;
     else
-        leftPressure = Pressure[index(id.x, id.y, id.z)].x;
+        leftPressure = Pressure[index(id.x, id.y)].x;
 
     if (id.y + 1 < N)
-        topPressure = Pressure[index(id.x, id.y + 1, id.z)].x;
+        topPressure = Pressure[index(id.x, id.y + 1)].x;
     else
-        topPressure = Pressure[index(id.x, id.y, id.z)].x;
+        topPressure = Pressure[index(id.x, id.y)].x;
 
     if (id.y > 0)
-        bottomPressure = Pressure[index(id.x, id.y - 1, id.z)].x;
+        bottomPressure = Pressure[index(id.x, id.y - 1)].x;
     else
-        bottomPressure = Pressure[index(id.x, id.y, id.z)].x;
+        bottomPressure = Pressure[index(id.x, id.y)].x;
 
-    if (id.z + 1 < N)
-        backPressure = Pressure[index(id.x, id.y, id.z + 1)].x;
-    else
-        backPressure = Pressure[index(id.x, id.y, id.z)].x;
 
-    if (id.z > 0)
-        frontPressure = Pressure[index(id.x, id.y, id.z - 1)].x;
-    else
-        frontPressure = Pressure[index(id.x, id.y, id.z)].x;
+    float3 pressureGradient = float3(rightPressure - leftPressure, topPressure - bottomPressure, 0);
 
-    float3 pressureGradient = float3(rightPressure - leftPressure, topPressure - bottomPressure, backPressure - frontPressure);
-
-    ResultingVelocity[index(id.x, id.y, id.z)] = float3(currentVelocity - 0.5f * pressureGradient / N);
+    ResultingVelocity[index(id.x, id.y)] = float3(currentVelocity - 0.5f * pressureGradient * N);
 }
         

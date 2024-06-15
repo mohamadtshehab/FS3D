@@ -55,16 +55,16 @@ public class FluidSimulation : MonoBehaviour
     void BindMaterial()
     {
         material = Quad.GetComponent<Renderer>().material;
-        material.SetTexture("_VolumeTex", RenderDensity);
+        material.mainTexture = RenderDensity;
     }
 
     void InitializeQuantities()
     {
-        N = 32;
-        TimeStep = 1;
-        Iterations = 100;
-        Diffusion = 10f;
-        Viscosity = 10f;
+        N = 1024;
+        TimeStep = 1f;
+        Iterations = 50;
+        Diffusion = 0f;
+        Viscosity = 0f;
 
         // Initialize RenderTexture
         Velocity = CreaeComputeBuffer(N);
@@ -93,13 +93,13 @@ public class FluidSimulation : MonoBehaviour
 
     ComputeBuffer CreaeComputeBuffer(int N)
     {
-        ComputeBuffer cb = new ComputeBuffer(N * N * N, sizeof(float) * 3);
+        ComputeBuffer cb = new ComputeBuffer(N * N, sizeof(float) * 3);
         return cb;
     }
 
     void SetComputeBufferData(ComputeBuffer cb)
     {
-        int size = N * N * N;
+        int size = N * N;
         Vector3[] data = new Vector3[size];
         for (int i = 0; i < size; i++)
         {
@@ -110,7 +110,7 @@ public class FluidSimulation : MonoBehaviour
 
     void SetRandomComputeBufferData(ComputeBuffer cb)
     {
-        int size = N * N * N;
+        int size = N * N;
         System.Random rand = new System.Random();
         Vector3[] data = new Vector3[size];
         for (int i = 0; i < size; i++)
@@ -125,43 +125,37 @@ public class FluidSimulation : MonoBehaviour
 
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
     {
-        Texture3D t = CreateTexture3D(N);
-        for (int z = 0; z < t.depth; z++)
-        {
+        Texture2D t = CreateTexture2D(N);
             for (int y = 0; y < t.height; y++)
             {
                 for (int x = 0; x < t.width; x++)
                 {
-                    t.SetPixel(x, y, z, color);
+                    t.SetPixel(x, y, color);
                 }
             }
-        }
 
         t.Apply();
-        //Copy3D(t, rt);
+        Graphics.Blit(t, rt);
     }
 
     void InitializeRandomRenderTexture(RenderTexture rt)
     {
-        Texture3D t = CreateTexture3D(N);
-        for (int z = 0; z < t.depth; z++)
-        {
+        Texture2D t = CreateTexture2D(N);
             for (int y = 0; y < t.height; y++)
             {
                 for (int x = 0; x < t.width; x++)
                 {
                     float randomValue = UnityEngine.Random.value;
-                    t.SetPixel(x, y, z, new UnityEngine.Color(randomValue, randomValue, randomValue, 1.0f));
+                    t.SetPixel(x, y, new UnityEngine.Color(randomValue, randomValue, randomValue, 1.0f));
                 }
             }
-        }
         t.Apply();
         //Copy3D(t, rt);
     }
 
-    Texture3D CreateTexture3D(int size)
+    Texture2D CreateTexture2D(int size)
     {
-        var texture = new Texture3D(size, size, size, TextureFormat.RGBAFloat, false)
+        var texture = new Texture2D(size, size, TextureFormat.RGBAFloat, false)
         {
             filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
@@ -171,11 +165,10 @@ public class FluidSimulation : MonoBehaviour
 
     RenderTexture CreateRenderTexture(int size)
     {
-        RenderTexture rt = new RenderTexture(N, N, 0, RenderTextureFormat.ARGBFloat)
+        RenderTexture rt = new RenderTexture(N, N, 0)
         {
-            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
-            volumeDepth = N,
             enableRandomWrite = true
+            //format = RenderTextureFormat.ARGBFloat
         };
         rt.Create();
         return rt;
@@ -212,7 +205,7 @@ public class FluidSimulation : MonoBehaviour
         int threadGroupsX = Mathf.CeilToInt(N / 8.0f);
         int threadGroupsY = Mathf.CeilToInt(N / 8.0f);
         int threadGroupsZ = Mathf.CeilToInt(N / 8.0f);
-        shader.Dispatch(kernel, threadGroupsX, threadGroupsY, threadGroupsZ);
+        shader.Dispatch(kernel, threadGroupsX, threadGroupsY, 1);
     }
 
     ComputeBuffer Solve(ComputeBuffer x, ComputeBuffer x0, float a, float c)
@@ -224,11 +217,11 @@ public class FluidSimulation : MonoBehaviour
         SolveShader.SetFloat("A", a);
         SolveShader.SetFloat("C", c);
         SolveShader.SetInt("Iterations", Iterations);
-        for (int i = 0; i < Iterations; i++)
-        {
+        //for (int i = 0; i < Iterations; i++)
+        //{
             DispatchShader(SolveShader, kernel);
-            Copy(SolutionStorage, x);
-        }
+            //Copy(SolutionStorage, x);
+        //}
         return SolutionStorage;
     }
 
