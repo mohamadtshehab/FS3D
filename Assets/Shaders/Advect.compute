@@ -14,9 +14,9 @@ int index(int x, int y, int z){
 [numthreads(8,8,8)]
 void Advect (uint3 id : SV_DispatchThreadID)
 {
-    float dtx = TimeStep * (N - 2);
-    float dty = TimeStep * (N - 2);
-    float dtz = TimeStep * (N - 2);
+    float dtx = TimeStep;
+    float dty = TimeStep;
+    float dtz = TimeStep;
 
     float3 dt = float3(dtx, dty, dtz);
     float nFloat = N;

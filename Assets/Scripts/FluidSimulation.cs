@@ -60,9 +60,9 @@ public class FluidSimulation : MonoBehaviour
 
     void InitializeQuantities()
     {
-        N = 32;
-        TimeStep = 1;
-        Iterations = 100;
+        N = 128;
+        TimeStep = 10;
+        Iterations = 1;
         Diffusion = 10f;
         Viscosity = 10f;
 
@@ -118,7 +118,7 @@ public class FluidSimulation : MonoBehaviour
             float x = (float)rand.NextDouble();
             float y = (float)rand.NextDouble();
             float z = (float)rand.NextDouble();
-            data[i] = new Vector3(x, y, z);
+            data[i] = new Vector3(x, x, x);
         }
         cb.SetData(data);
     }
@@ -171,14 +171,13 @@ public class FluidSimulation : MonoBehaviour
 
     RenderTexture CreateRenderTexture(int size)
     {
-        RenderTexture rt = new RenderTexture(N, N, 0, RenderTextureFormat.ARGBFloat)
-        {
-            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
-            volumeDepth = N,
-            enableRandomWrite = true
-        };
-        rt.Create();
-        return rt;
+        RenderTexture renderTexture = new RenderTexture(size, size, 0);
+        renderTexture.format = RenderTextureFormat.ARGBFloat;
+        renderTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
+        renderTexture.volumeDepth = size;
+        renderTexture.enableRandomWrite = true;
+        renderTexture.Create();
+        return renderTexture;
     }
 
     void InitializeRandomTexture2D(Texture2D texture)
