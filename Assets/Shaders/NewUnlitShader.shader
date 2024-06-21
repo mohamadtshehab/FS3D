@@ -3,6 +3,7 @@ Shader "Unlit/3DTextureShader"
     Properties
     {
         _VolumeTex ("Volume Texture", 3D) = "white" {}
+        _Samples ("Number of Samples", Range(1, 100)) = 10 // Number of samples to take along the z-axis
     }
     SubShader
     {
@@ -13,7 +14,7 @@ Shader "Unlit/3DTextureShader"
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
-            
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -27,6 +28,7 @@ Shader "Unlit/3DTextureShader"
             };
 
             sampler3D _VolumeTex;
+            float _Samples;
 
             v2f vert (appdata v)
             {
@@ -38,9 +40,14 @@ Shader "Unlit/3DTextureShader"
 
             half4 frag (v2f i) : SV_Target
             {
-                // Sample the 3D texture at some z slice (e.g., halfway through)
-                float z = 0.5;
-                half4 col = tex3D(_VolumeTex, float3(i.uv, z));
+                half4 col = half4(0, 0, 0, 0);
+                // Loop to sample along the z-axis
+                for (int j = 0; j < _Samples; ++j)
+                {
+                    float z = j / (_Samples - 1.0);
+                    col += tex3D(_VolumeTex, float3(i.uv, z));
+                }
+                col /= _Samples; // Average the samples
                 return col;
             }
             ENDCG

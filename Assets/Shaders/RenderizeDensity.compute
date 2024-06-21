@@ -3,15 +3,15 @@
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
-RWTexture2D<float3> Target;
+RWTexture3D<float3> Target;
 StructuredBuffer<float3> Source;
 int N;
 
-int index(int x, int y){
-    return (x) + (y) *(N);
+int index(int x, int y, int z){
+    return x + (y * N) + (z * N * N);
     }
-[numthreads(8, 8, 1)]
+[numthreads(8, 8, 8)]
 void RenderizeDensity (uint3 id : SV_DispatchThreadID)
 {
-    Target[id.xy] = Source[index(id.x, id.y)];
+    Target[id.xyz] = Source[index(id.x, id.y, id.z)];
 }
