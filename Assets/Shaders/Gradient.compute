@@ -5,6 +5,7 @@
 RWStructuredBuffer<float3> ResultingVelocity;
 StructuredBuffer<float3> Pressure;
 StructuredBuffer<float3> Velocity;
+StructuredBuffer<bool> Solid;
 int N;
 
 int index(int x, int y, int z) {
@@ -17,35 +18,36 @@ void Gradient(uint3 id : SV_DispatchThreadID) {
 
     float rightPressure, leftPressure, topPressure, bottomPressure, frontPressure, backPressure;
 
-    if (id.x + 1 < N)
+    if (id.x + 1 < N && Solid[index(id.x + 1, id.y, id.z)] == 0)
         rightPressure = Pressure[index(id.x + 1, id.y, id.z)].x;
     else
         rightPressure = Pressure[index(id.x, id.y, id.z)].x;
 
-    if (id.x > 0)
+    if (id.x > 0 && Solid[index(id.x - 1, id.y, id.z)] == 0)
         leftPressure = Pressure[index(id.x - 1, id.y, id.z)].x;
     else
         leftPressure = Pressure[index(id.x, id.y, id.z)].x;
 
-    if (id.y + 1 < N)
+    if (id.y + 1 < N && Solid[index(id.x, id.y + 1, id.z)] == 0)
         topPressure = Pressure[index(id.x, id.y + 1, id.z)].x;
     else
         topPressure = Pressure[index(id.x, id.y, id.z)].x;
 
-    if (id.y > 0)
+    if (id.y > 0 && Solid[index(id.x, id.y - 1, id.z)] == 0)
         bottomPressure = Pressure[index(id.x, id.y - 1, id.z)].x;
     else
         bottomPressure = Pressure[index(id.x, id.y, id.z)].x;
 
-    if (id.z + 1 < N)
+    if (id.z + 1 < N && Solid[index(id.x, id.y, id.z + 1)] == 0)
         frontPressure = Pressure[index(id.x, id.y, id.z + 1)].x;
     else
         frontPressure = Pressure[index(id.x, id.y, id.z)].x;
 
-    if (id.z > 0)
+    if (id.z > 0 && Solid[index(id.x, id.y, id.z - 1)] == 0)
         backPressure = Pressure[index(id.x, id.y, id.z - 1)].x;
     else
         backPressure = Pressure[index(id.x, id.y, id.z)].x;
+
 
     float3 pressureGradient = float3(rightPressure - leftPressure, topPressure - bottomPressure, frontPressure - backPressure);
 

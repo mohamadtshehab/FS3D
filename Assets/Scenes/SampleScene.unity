@@ -342,9 +342,9 @@ MonoBehaviour:
   N: 64
   TimeStep: 0.1
   Iterations: 1
-  Diffusion: 0.01
-  Viscosity: 0.005
-  SliceCount: 64
+  Diffusion: 0
+  Viscosity: 0
+  SliceCount: 63
 --- !u!4 &1362900226
 Transform:
   m_ObjectHideFlags: 0

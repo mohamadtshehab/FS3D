@@ -4,6 +4,7 @@
 // with cs.SetTexture
 RWStructuredBuffer<float3> Divergence;
 StructuredBuffer<float3> Velocity;
+StructuredBuffer<int> Solid;
 int N;
 
 int index(int x, int y, int z) {
@@ -19,35 +20,89 @@ void Diverge(uint3 id : SV_DispatchThreadID) {
     float frontZ = 0.0f;
     float backZ = 0.0f;
 
-    if (id.x + 1 < N)
-        rightX = Velocity[index(id.x + 1, id.y, id.z)].x;
-    else
-        rightX = Velocity[index(id.x, id.y, id.z)].x;
+    if (id.x + 1 < N) {
+        if (Solid[index(id.x + 1, id.y, id.z)] == 1) {
+            rightX = 0.0f;
+        } else {
+            rightX = Velocity[index(id.x + 1, id.y, id.z)].x;
+        }
+    } else {
+        if (Solid[index(id.x, id.y, id.z)] == 1) {
+            rightX = 0.0f;
+        } else {
+            rightX = Velocity[index(id.x, id.y, id.z)].x;
+        }
+    }
 
-    if (id.x > 0)
-        leftX = Velocity[index(id.x - 1, id.y, id.z)].x;
-    else
-        leftX = Velocity[index(id.x, id.y, id.z)].x;
+    if (id.x > 0) {
+        if (Solid[index(id.x - 1, id.y, id.z)] == 1) {
+            leftX = 0.0f;
+        } else {
+            leftX = Velocity[index(id.x - 1, id.y, id.z)].x;
+        }
+    } else {
+        if (Solid[index(id.x, id.y, id.z)] == 1) {
+            leftX = 0.0f;
+        } else {
+            leftX = Velocity[index(id.x, id.y, id.z)].x;
+        }
+    }
 
-    if (id.y + 1 < N)
-        topY = Velocity[index(id.x, id.y + 1, id.z)].y;
-    else
-        topY = Velocity[index(id.x, id.y, id.z)].y;
+    if (id.y + 1 < N) {
+        if (Solid[index(id.x, id.y + 1, id.z)] == 1) {
+            topY = 0.0f;
+        } else {
+            topY = Velocity[index(id.x, id.y + 1, id.z)].y;
+        }
+    } else {
+        if (Solid[index(id.x, id.y, id.z)] == 1) {
+            topY = 0.0f;
+        } else {
+            topY = Velocity[index(id.x, id.y, id.z)].y;
+        }
+    }
 
-    if (id.y > 0)
-        bottomY = Velocity[index(id.x, id.y - 1, id.z)].y;
-    else
-        bottomY = Velocity[index(id.x, id.y, id.z)].y;
+    if (id.y > 0) {
+        if (Solid[index(id.x, id.y - 1, id.z)] == 1) {
+            bottomY = 0.0f;
+        } else {
+            bottomY = Velocity[index(id.x, id.y - 1, id.z)].y;
+        }
+    } else {
+        if (Solid[index(id.x, id.y, id.z)] == 1) {
+            bottomY = 0.0f;
+        } else {
+            bottomY = Velocity[index(id.x, id.y, id.z)].y;
+        }
+    }
 
-    if (id.z + 1 < N)
-        frontZ = Velocity[index(id.x, id.y, id.z + 1)].z;
-    else
-        frontZ = Velocity[index(id.x, id.y, id.z)].z;
+    if (id.z + 1 < N) {
+        if (Solid[index(id.x, id.y, id.z + 1)] == 1) {
+            frontZ = 0.0f;
+        } else {
+            frontZ = Velocity[index(id.x, id.y, id.z + 1)].z;
+        }
+    } else {
+        if (Solid[index(id.x, id.y, id.z)] == 1) {
+            frontZ = 0.0f;
+        } else {
+            frontZ = Velocity[index(id.x, id.y, id.z)].z;
+        }
+    }
 
-    if (id.z > 0)
-        backZ = Velocity[index(id.x, id.y, id.z - 1)].z;
-    else
-        backZ = Velocity[index(id.x, id.y, id.z)].z;
+    if (id.z > 0) {
+        if (Solid[index(id.x, id.y, id.z - 1)] == 1) {
+            backZ = 0.0f;
+        } else {
+            backZ = Velocity[index(id.x, id.y, id.z - 1)].z;
+        }
+    } else {
+        if (Solid[index(id.x, id.y, id.z)] == 1) {
+            backZ = 0.0f;
+        } else {
+            backZ = Velocity[index(id.x, id.y, id.z)].z;
+        }
+    }
 
     Divergence[index(id.x, id.y, id.z)] = -0.5f * (rightX - leftX + topY - bottomY + frontZ - backZ) * N;
 }

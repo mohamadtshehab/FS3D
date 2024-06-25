@@ -28,6 +28,8 @@ public class FluidSimulation : MonoBehaviour
     public ComputeBuffer Density;
     public ComputeBuffer PreviousDensity;
 
+    public ComputeBuffer Solid;
+
     public RenderTexture DensityTexture;
     public Material VolumeMaterial;
     public GameObject Cube;
@@ -78,11 +80,11 @@ public class FluidSimulation : MonoBehaviour
     {
 
         // Initialize RenderTexture
-        Velocity = CreateComputeBuffer(N);
-        PreviousVelocity = CreateComputeBuffer(N);
-        Pressure = CreateComputeBuffer(N);
-        Density = CreateComputeBuffer(N);
-        PreviousDensity = CreateComputeBuffer(N);
+        Velocity = CreateComputeBuffer();
+        PreviousVelocity = CreateComputeBuffer();
+        Pressure = CreateComputeBuffer();
+        Density = CreateComputeBuffer();
+        PreviousDensity = CreateComputeBuffer();
 
         //RenderDensity = CreateRenderTexture(N);
         //InitializeRenderTexture(RenderDensity, UnityEngine.Color.black);
@@ -94,13 +96,15 @@ public class FluidSimulation : MonoBehaviour
         SetRandomComputeBufferData(Pressure);
 
 
-        AdvectionStorage = CreateComputeBuffer(N);
-        SolutionStorage = CreateComputeBuffer(N);
-        DivergenceStorage = CreateComputeBuffer(N);
-        GradientStorage = CreateComputeBuffer(N);
-        ResultingDensity = CreateComputeBuffer(N);
-        ResultingVelocity = CreateComputeBuffer(N);
+        AdvectionStorage = CreateComputeBuffer();
+        SolutionStorage = CreateComputeBuffer();
+        DivergenceStorage = CreateComputeBuffer();
+        GradientStorage = CreateComputeBuffer();
+        ResultingDensity = CreateComputeBuffer();
+        ResultingVelocity = CreateComputeBuffer();
 
+        Solid = CreateComputeBuffer("int");
+        SetSolidVoxels(Solid);
 
         DensityTexture = CreateRenderTexture(N);
         InitializeRandomRenderTexture(DensityTexture);
@@ -108,15 +112,24 @@ public class FluidSimulation : MonoBehaviour
         
     }
 
-    ComputeBuffer CreateComputeBuffer(int N)
+    ComputeBuffer CreateComputeBuffer(string dataType = "vector")
     {
-        ComputeBuffer cb = new ComputeBuffer(N * N * N, sizeof(float) * 3);
+        ComputeBuffer cb;
+        if (dataType == "vector")
+        {
+            cb = new ComputeBuffer(N * N * N, sizeof(float) * 3);
+        }
+        else
+        {
+            cb = new ComputeBuffer(N * N * N, sizeof(int));
+        }
         return cb;
     }
 
     void SetComputeBufferData(ComputeBuffer cb)
     {
         int size = N * N * N;
+
         Vector3[] data = new Vector3[size];
         for (int i = 0; i < size; i++)
         {
@@ -140,6 +153,30 @@ public class FluidSimulation : MonoBehaviour
         cb.SetData(data);
     }
 
+    void SetSolidVoxels(ComputeBuffer cb)
+    {
+        int[] data = new int[N * N * N];
+        int start = (int) (N / 2);
+        int end = (int) (N / 2 + 5);
+        for (int z = 0; z < N; ++z)
+        {
+            for (int y= 0; y < N; ++y)
+            {
+                for (int x = 0; x < N; ++x)
+                {
+                    if ( x >= start && x <= end && y >= start && y <= end && z >= start && z <= end)
+                    {
+                        data[Index(x, y, z)] = 1;
+                    }
+                    else
+                    {
+                        data[Index(x, y, z)] = 0;
+                    }
+                }
+            }
+        }
+        cb.SetData(data);
+    }
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
     {
         Texture3D t = CreateTexture3D(N);
@@ -260,6 +297,7 @@ public class FluidSimulation : MonoBehaviour
     {
         int kernel = DivergeShader.FindKernel("Diverge");
         DivergeShader.SetBuffer(kernel, "Divergence", DivergenceStorage);
+        DivergeShader.SetBuffer(kernel, "Solid", Solid);
         DivergeShader.SetBuffer(kernel, "Velocity", velocity);
         DivergeShader.SetInt("N", N);
         DispatchShader(DivergeShader, kernel);
@@ -270,6 +308,7 @@ public class FluidSimulation : MonoBehaviour
     {
         int kernel = GradientShader.FindKernel("Gradient");
         GradientShader.SetBuffer(kernel, "ResultingVelocity", GradientStorage);
+        GradientShader.SetBuffer(kernel, "Solid", Solid);
         GradientShader.SetBuffer(kernel, "Pressure", pressure);
         GradientShader.SetBuffer(kernel, "Velocity", velocity);
         GradientShader.SetInt("N", N);

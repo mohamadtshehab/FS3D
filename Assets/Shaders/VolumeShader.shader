@@ -39,7 +39,7 @@ Shader "Custom/VolumeShader"
                 v2f o;
                 o.pos = UnityObjectToClipPos(v.vertex);
                 o.texcoord = v.texcoord;
-                o.texcoord.z = _Slice; // Set the slice level
+                o.texcoord.z = _Slice;
                 return o;
             }
 
@@ -47,10 +47,11 @@ Shader "Custom/VolumeShader"
             {
                 float threshold = 0.1;
                 float3 density = tex3D(_VolumeTex, i.texcoord).rgb;
+
                 if (density.r < threshold || density.g  < threshold || density.b < threshold){
                     discard;
                     }
-                return fixed4(density, density.r); // Grayscale visualization
+                return fixed4(density, density.r);
             }
             ENDCG
         }
