@@ -1,7 +1,7 @@
 using System;
-using System.Diagnostics;
-using System.Drawing;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class FluidSimulation : MonoBehaviour
 {
@@ -9,8 +9,8 @@ public class FluidSimulation : MonoBehaviour
     public ComputeShader SolveShader;
     public ComputeShader DivergeShader;
     public ComputeShader GradientShader;
-    public ComputeShader AddDensityShader;
-    public ComputeShader AddVelocityShader;
+    private ComputeShader AddDensityShader;
+    private ComputeShader AddVelocityShader;
     public ComputeShader CopyShader;
     public ComputeShader RenderizeDensityShader;
 
@@ -29,7 +29,12 @@ public class FluidSimulation : MonoBehaviour
     public ComputeBuffer Density;
     public ComputeBuffer PreviousDensity;
 
-    public RenderTexture RenderDensity;
+    public ComputeBuffer Solid;
+
+    public RenderTexture DensityTexture;
+    public Material VolumeMaterial;
+    public GameObject Cube;
+    //public RenderTexture RenderDensity;
 
     //Constants.
     public int N;
@@ -37,14 +42,12 @@ public class FluidSimulation : MonoBehaviour
     public int Iterations;
     public float Diffusion;
     public float Viscosity;
-
-    public GameObject Quad;
-    public Material material;
-
+    public int SliceCount;
     void Start()
     {
         InitializeQuantities();
         BindMaterial();
+
     }
 
     void Update()
@@ -54,27 +57,38 @@ public class FluidSimulation : MonoBehaviour
 
     void BindMaterial()
     {
-        material = Quad.GetComponent<Renderer>().material;
-        material.mainTexture = RenderDensity;
+        for (int i = 0; i < SliceCount; i++)
+        {
+            float sliceDepth = (float)i / (SliceCount - 1);
+
+            GameObject slice = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            slice.transform.SetParent(transform, false);
+            slice.transform.localPosition = new Vector3(0, 0, sliceDepth);
+            slice.transform.localScale = new Vector3(1, 1, 1);
+
+            Material sliceMaterial = new Material(Shader.Find("Custom/VolumeShader"));
+            sliceMaterial.SetTexture("_VolumeTex", DensityTexture);
+            sliceMaterial.SetFloat("_Slice", (float)i / (SliceCount - 1));
+
+            Renderer sliceRenderer = slice.GetComponent<Renderer>();
+            sliceRenderer.material = sliceMaterial;
+        }
     }
+
+
 
     void InitializeQuantities()
     {
-        N = 1024;
-        TimeStep = 1f;
-        Iterations = 50;
-        Diffusion = 0f;
-        Viscosity = 0f;
 
         // Initialize RenderTexture
-        Velocity = CreaeComputeBuffer(N);
-        PreviousVelocity = CreaeComputeBuffer(N);
-        Pressure = CreaeComputeBuffer(N);
-        Density = CreaeComputeBuffer(N);
-        PreviousDensity = CreaeComputeBuffer(N);
+        Velocity = CreateComputeBuffer();
+        PreviousVelocity = CreateComputeBuffer();
+        Pressure = CreateComputeBuffer();
+        Density = CreateComputeBuffer();
+        PreviousDensity = CreateComputeBuffer();
 
-        RenderDensity = CreateRenderTexture(N);
-        InitializeRenderTexture(RenderDensity, UnityEngine.Color.black);
+        //RenderDensity = CreateRenderTexture(N);
+        //InitializeRenderTexture(RenderDensity, UnityEngine.Color.black);
         // Initialize Velocity
         SetRandomComputeBufferData(Velocity);
         SetRandomComputeBufferData(PreviousVelocity);
@@ -83,23 +97,40 @@ public class FluidSimulation : MonoBehaviour
         SetRandomComputeBufferData(Pressure);
 
 
-        AdvectionStorage = CreaeComputeBuffer(N);
-        SolutionStorage = CreaeComputeBuffer(N);
-        DivergenceStorage = CreaeComputeBuffer(N);
-        GradientStorage = CreaeComputeBuffer(N);
-        ResultingDensity = CreaeComputeBuffer(N);
-        ResultingVelocity = CreaeComputeBuffer(N);
+        AdvectionStorage = CreateComputeBuffer();
+        SolutionStorage = CreateComputeBuffer();
+        DivergenceStorage = CreateComputeBuffer();
+        GradientStorage = CreateComputeBuffer();
+        ResultingDensity = CreateComputeBuffer();
+        ResultingVelocity = CreateComputeBuffer();
+
+        Solid = CreateComputeBuffer("int");
+        SetRandomComputeBufferData(Solid, "int");
+
+        DensityTexture = CreateRenderTexture(N);
+        InitializeRandomRenderTexture(DensityTexture);
+
+        
     }
 
-    ComputeBuffer CreaeComputeBuffer(int N)
+    ComputeBuffer CreateComputeBuffer(string dataType = "vector")
     {
-        ComputeBuffer cb = new ComputeBuffer(N * N, sizeof(float) * 3);
+        ComputeBuffer cb;
+        if (dataType == "vector")
+        {
+            cb = new ComputeBuffer(N * N * N, sizeof(float) * 3);
+        }
+        else
+        {
+            cb = new ComputeBuffer(N * N * N, sizeof(int));
+        }
         return cb;
     }
 
     void SetComputeBufferData(ComputeBuffer cb)
     {
-        int size = N * N;
+        int size = N * N * N;
+
         Vector3[] data = new Vector3[size];
         for (int i = 0; i < size; i++)
         {
@@ -108,54 +139,111 @@ public class FluidSimulation : MonoBehaviour
         cb.SetData(data);
     }
 
-    void SetRandomComputeBufferData(ComputeBuffer cb)
+    void SetRandomComputeBufferData(ComputeBuffer cb, string dataType = "vector")
     {
-        int size = N * N;
-        System.Random rand = new System.Random();
-        Vector3[] data = new Vector3[size];
-        for (int i = 0; i < size; i++)
+        int size = N * N * N;
+        int xStart = (int) (N - 20);
+        int xEnd = xStart + 19 ;
+        int yStart = xStart;
+        int yEnd = yStart + 19;
+        int zStart = xStart;
+        int zEnd = zStart + 19;
+
+
+        if (dataType == "vector")
         {
-            float x = (float)rand.NextDouble();
-            float y = (float)rand.NextDouble();
-            float z = (float)rand.NextDouble();
-            data[i] = new Vector3(x, y, z);
+            System.Random rand = new System.Random();
+            Vector3[] data = new Vector3[size];
+            for (int z = 0; z < N; ++z)
+            {
+                for (int y = 0; y < N; ++y)
+                {
+                    for (int x = 0; x < N; ++x)
+                    {
+                        bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                        if (condition == true)
+                        {
+                            data[Index(x, y, z)] = new Vector3(0, 0, 0);
+                        }
+                        else
+                        {
+                            float r = (float)rand.NextDouble();
+                            float g = (float)rand.NextDouble();
+                            float b = (float)rand.NextDouble();
+                            data[Index(x, y, z)] = new Vector3(r, g, b);
+                        }
+                    }
+                }
+            }
+            cb.SetData(data);
         }
-        cb.SetData(data);
+        else
+        {
+            int[] data = new int[N * N * N];
+
+
+            for (int z = 0; z < N; ++z)
+            {
+                for (int y = 0; y < N; ++y)
+                {
+                    for (int x = 0; x < N; ++x)
+                    {
+                        bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                        if (condition == true)
+                        {
+                            data[Index(x, y, z)] = 1;
+                        }
+                        else
+                        {
+                            data[Index(x, y, z)] = 0;
+                        }
+                    }
+                }
+            }
+            cb.SetData(data);
+        }
     }
 
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
     {
-        Texture2D t = CreateTexture2D(N);
+        Texture3D t = CreateTexture3D(N);
+        for (int z = 0; z < t.depth; z++)
+        {
             for (int y = 0; y < t.height; y++)
             {
                 for (int x = 0; x < t.width; x++)
                 {
-                    t.SetPixel(x, y, color);
+                    t.SetPixel(x, y, z, color);
                 }
             }
-
+        }
+            
         t.Apply();
         Graphics.Blit(t, rt);
     }
 
     void InitializeRandomRenderTexture(RenderTexture rt)
     {
-        Texture2D t = CreateTexture2D(N);
+        Texture3D t = CreateTexture3D(N);
+        for(int z = 0; z < t.depth; z++)
+        {
             for (int y = 0; y < t.height; y++)
             {
                 for (int x = 0; x < t.width; x++)
                 {
                     float randomValue = UnityEngine.Random.value;
-                    t.SetPixel(x, y, new UnityEngine.Color(randomValue, randomValue, randomValue, 1.0f));
+                    t.SetPixel(x, y, z, new UnityEngine.Color(randomValue, randomValue, randomValue, 1.0f));
                 }
             }
+        }
+
         t.Apply();
         //Copy3D(t, rt);
     }
 
-    Texture2D CreateTexture2D(int size)
+    Texture3D CreateTexture3D(int size)
     {
-        var texture = new Texture2D(size, size, TextureFormat.RGBAFloat, false)
+        var texture = new Texture3D(size, size, size, TextureFormat.RGBAFloat, false)
         {
             filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
@@ -165,22 +253,29 @@ public class FluidSimulation : MonoBehaviour
 
     RenderTexture CreateRenderTexture(int size)
     {
-        RenderTexture rt = new RenderTexture(N, N, 0)
+        RenderTexture rt = new RenderTexture(size, size, 0)
         {
-            enableRandomWrite = true
-            //format = RenderTextureFormat.ARGBFloat
+            enableRandomWrite = true,
+            // Optionally set the format:
+            // format = RenderTextureFormat.ARGBFloat
+            dimension = TextureDimension.Tex3D,
+            volumeDepth = size
         };
         rt.Create();
         return rt;
     }
 
-    void InitializeRandomTexture2D(Texture2D texture)
+
+    void InitializeRandomTexture3D(Texture3D texture)
     {
-        for (int y = 0; y < texture.height; y++)
+        for (int z = 0; z < N; z++)
         {
-            for (int x = 0; x < texture.width; x++)
+            for (int y = 0; y < texture.height; y++)
             {
-                texture.SetPixel(x, y, new UnityEngine.Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1.0f));
+                for (int x = 0; x < texture.width; x++)
+                {
+                    texture.SetPixel(x, y, z, new UnityEngine.Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1.0f));
+                }
             }
         }
         texture.Apply();
@@ -205,7 +300,7 @@ public class FluidSimulation : MonoBehaviour
         int threadGroupsX = Mathf.CeilToInt(N / 8.0f);
         int threadGroupsY = Mathf.CeilToInt(N / 8.0f);
         int threadGroupsZ = Mathf.CeilToInt(N / 8.0f);
-        shader.Dispatch(kernel, threadGroupsX, threadGroupsY, 1);
+        shader.Dispatch(kernel, threadGroupsX, threadGroupsY, threadGroupsZ);
     }
 
     ComputeBuffer Solve(ComputeBuffer x, ComputeBuffer x0, float a, float c)
@@ -217,11 +312,7 @@ public class FluidSimulation : MonoBehaviour
         SolveShader.SetFloat("A", a);
         SolveShader.SetFloat("C", c);
         SolveShader.SetInt("Iterations", Iterations);
-        //for (int i = 0; i < Iterations; i++)
-        //{
-            DispatchShader(SolveShader, kernel);
-            //Copy(SolutionStorage, x);
-        //}
+        DispatchShader(SolveShader, kernel);
         return SolutionStorage;
     }
 
@@ -229,6 +320,7 @@ public class FluidSimulation : MonoBehaviour
     {
         int kernel = DivergeShader.FindKernel("Diverge");
         DivergeShader.SetBuffer(kernel, "Divergence", DivergenceStorage);
+        DivergeShader.SetBuffer(kernel, "Solid", Solid);
         DivergeShader.SetBuffer(kernel, "Velocity", velocity);
         DivergeShader.SetInt("N", N);
         DispatchShader(DivergeShader, kernel);
@@ -239,6 +331,7 @@ public class FluidSimulation : MonoBehaviour
     {
         int kernel = GradientShader.FindKernel("Gradient");
         GradientShader.SetBuffer(kernel, "ResultingVelocity", GradientStorage);
+        GradientShader.SetBuffer(kernel, "Solid", Solid);
         GradientShader.SetBuffer(kernel, "Pressure", pressure);
         GradientShader.SetBuffer(kernel, "Velocity", velocity);
         GradientShader.SetInt("N", N);
@@ -314,87 +407,12 @@ public class FluidSimulation : MonoBehaviour
         ComputeBuffer advectedCurrentDensity = Advect(Density, Velocity);
         Copy(advectedCurrentDensity, Density);
 
-        RenderizeDensity(Density, RenderDensity);
-
+        RenderizeDensity(Density, DensityTexture);
     }
 
-    void CopyRenderTextureToTexture2D(RenderTexture rt, Texture2D texture)
+    int Index(int x, int y, int z)
     {
-        RenderTexture.active = rt;
-        texture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-        texture.Apply();
-        RenderTexture.active = null;
+        return x + (y * N) + (z * N * N);
     }
-
-    RenderTexture CreateRenderTextureFromTexture2D(Texture2D texture)
-    {
-        var rt = new RenderTexture(texture.width, texture.height, 0)
-        {
-            enableRandomWrite = true,
-        };
-        rt.Create();
-        Graphics.Blit(texture, rt);
-        return rt;
-    }
-
-    //void AddDensity(int x, int y, float amount)
-    //{
-    //    Texture2D D = new Texture2D(N, N);
-    //    CopyRenderTextureToTexture2D(Density, D);
-    //    Color currentDensity = D.GetPixel(x, y);
-    //    float newDensity = currentDensity.r + amount;
-    //    D.SetPixel(x, y, new Color(newDensity, newDensity, newDensity, 1.0f));
-    //    D.Apply();
-    //    Graphics.Blit(D, Density);
-    //    D = null;
-    //}
-
-    //void AddVelocity(int x, int y, float amountX, float amountY)
-    //{
-    //    Texture2D V = new Texture2D(N, N);
-    //    CopyRenderTextureToTexture2D(Velocity, V);
-    //    Color currentVelocity = V.GetPixel(x, y);
-    //    float newVelocityX = currentVelocity.r + amountX;
-    //    float newVelocityY = currentVelocity.g + amountY;
-    //    V.SetPixel(x, y, new Color(newVelocityX, newVelocityY, 0.0f, 1.0f));
-    //    V.Apply();
-    //    Graphics.Blit(V, Velocity);
-    //    V = null;
-    //}
-
-    //void AddDensity(int x, int y, float amount)
-    //{
-    //    int kernel = AddDensityShader.FindKernel("AddDensity");
-    //    AddDensityShader.SetTexture(kernel, "ResultingDensity", ResultingDensity);
-    //    AddDensityShader.SetTexture(kernel, "Density", Density);
-    //    AddDensityShader.SetInt("X", x);
-    //    AddDensityShader.SetInt("Y", y);
-    //    AddDensityShader.SetFloat("Amount", amount);
-    //    AddDensityShader.Dispatch(kernel, 1, 1, 1);
-    //    Graphics.Blit(ResultingDensity, Density);
-    //}
-
-    //void AddVelocity(int x, int y, float amountX, float amountY)
-    //{
-    //    int kernel = AddVelocityShader.FindKernel("AddVelocity");
-    //    AddVelocityShader.SetTexture(kernel, "ResultingVelocity", ResultingVelocity);
-    //    AddVelocityShader.SetTexture(kernel, "Velocity", Velocity);
-    //    AddVelocityShader.SetInt("X", x);
-    //    AddVelocityShader.SetInt("Y", y);
-    //    AddVelocityShader.SetFloat("AmountX", amountX);
-    //    AddVelocityShader.SetFloat("AmountY", amountY);
-    //    AddVelocityShader.Dispatch(kernel, 1, 1, 1);
-    //    Graphics.Blit(ResultingVelocity, Velocity);
-    //}
-    //void HandleMouseInput()
-    //{
-
-    //    if (Input.GetMouseButtonDown(0))
-    //    {
-    //        AddVelocity((int)(N / 2), (int)(N / 2), 10.0f, 10.0f);
-    //        AddDensity((int)(N / 2), (int)(N / 2), 10000);
-    //    }
-            
-    //}
 
 }

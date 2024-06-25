@@ -3,7 +3,17 @@ guid: d8f5fa9b87ebf3341b01b31a14e0acf0
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - AdvectShader: {fileID: 7200000, guid: d813063a4e65e5d4ca620c5f486527e0, type: 3}
+  - SolveShader: {fileID: 7200000, guid: e471a51915cde884889fd232394b8d4f, type: 3}
+  - DivergeShader: {fileID: 7200000, guid: 0a5a879e0aff96340bb865a54d0ba3ae, type: 3}
+  - GradientShader: {fileID: 7200000, guid: 6f1ec88eaf4caf24b8b51adc7575752d, type: 3}
+  - AddDensityShader: {instanceID: 0}
+  - AddVelocityShader: {instanceID: 0}
+  - CopyShader: {fileID: 7200000, guid: 0cac5da3defcff342893d702e08b144d, type: 3}
+  - RenderizeDensityShader: {instanceID: 0}
+  - mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  - material: {fileID: 2100000, guid: a060264fcb628bb428348f7c3165bcea, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

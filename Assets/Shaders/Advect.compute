@@ -1,51 +1,56 @@
-
 #pragma kernel Advect
 
 RWStructuredBuffer<float3> Quantity;
 StructuredBuffer<float3> ToAdvectQuantity;
 StructuredBuffer<float3> ToAdvectOverVelocity;
 float TimeStep;
-int N;
+int N; // N represents the size in one dimension (assuming a cubic grid N x N x N)
 
-int index(int x, int y){
-    return (x) + (y) *(N);
-    }
+int index(int x, int y, int z) {
+    return x + (y * N) + (z * N * N);
+}
 
-[numthreads(8,8,1)]
-void Advect (uint3 id : SV_DispatchThreadID)
-{
-    float dtx = TimeStep;
-    float dty = TimeStep;
+[numthreads(8, 8, 8)]
+void Advect(uint3 id : SV_DispatchThreadID) {
+    float dt = TimeStep;
 
-    float3 dt = float3(dtx, dty, 0);
+    float3 dtVec = float3(dt, dt, dt);
     float nFloat = N;
-    float3 coordinates = float3(id.x, id.y, 0);
-    float3 XY = coordinates -  dt * ToAdvectOverVelocity[index(id.x, id.y)];
+    float3 coordinates = float3(id.x, id.y, id.z);
+    float3 XYZ = coordinates - dtVec * ToAdvectOverVelocity[index(id.x, id.y, id.z)];
 
-    if (XY.x < 0.5f) XY.x = 0.5f;
-    if (XY.x > nFloat + 0.5f) XY.x = nFloat + 0.5f;
-    int i0 = floor(XY.x);
+    if (XYZ.x < 0.5f) XYZ.x = 0.5f;
+    if (XYZ.x > nFloat + 0.5f) XYZ.x = nFloat + 0.5f;
+    int i0 = floor(XYZ.x);
     int i1 = i0 + 1;
 
-    if (XY.y < 0.5f) XY.y = 0.5f;
-    if (XY.y > nFloat + 0.5f) XY.y = nFloat + 0.5f;
-    int j0 = floor(XY.y);
+    if (XYZ.y < 0.5f) XYZ.y = 0.5f;
+    if (XYZ.y > nFloat + 0.5f) XYZ.y = nFloat + 0.5f;
+    int j0 = floor(XYZ.y);
     int j1 = j0 + 1;
 
-    float s1 = XY.x - i0;
+    if (XYZ.z < 0.5f) XYZ.z = 0.5f;
+    if (XYZ.z > nFloat + 0.5f) XYZ.z = nFloat + 0.5f;
+    int k0 = floor(XYZ.z);
+    int k1 = k0 + 1;
+
+    float s1 = XYZ.x - i0;
     float s0 = 1.0f - s1;
-    float t1 = XY.y - j0;
+    float t1 = XYZ.y - j0;
     float t0 = 1.0f - t1;
+    float u1 = XYZ.z - k0;
+    float u0 = 1.0f - u1;
 
+    float3 QuantityI0J0K0 = ToAdvectQuantity[index(i0, j0, k0)];
+    float3 QuantityI0J0K1 = ToAdvectQuantity[index(i0, j0, k1)];
+    float3 QuantityI0J1K0 = ToAdvectQuantity[index(i0, j1, k0)];
+    float3 QuantityI0J1K1 = ToAdvectQuantity[index(i0, j1, k1)];
+    float3 QuantityI1J0K0 = ToAdvectQuantity[index(i1, j0, k0)];
+    float3 QuantityI1J0K1 = ToAdvectQuantity[index(i1, j0, k1)];
+    float3 QuantityI1J1K0 = ToAdvectQuantity[index(i1, j1, k0)];
+    float3 QuantityI1J1K1 = ToAdvectQuantity[index(i1, j1, k1)];
 
-    float3 QuantityI0J0 = ToAdvectQuantity[index(i0, j0)];
-    float3 QuantityI0J1 = ToAdvectQuantity[index(i0, j1)];
-    float3 QuantityI1J0 = ToAdvectQuantity[index(i1, j0)];
-    float3 QuantityI1J1 = ToAdvectQuantity[index(i1, j1)];
-         
-    Quantity[index(id.x, id.y)] = 
-        s0 * (t0 * QuantityI0J0 + t1 * QuantityI0J1) +
-        s1 * (t0 * QuantityI1J0 + t1 * QuantityI1J1);
-    }
-
-
+    Quantity[index(id.x, id.y, id.z)] =
+        s0 * (t0 * (u0 * QuantityI0J0K0 + u1 * QuantityI0J0K1) + t1 * (u0 * QuantityI0J1K0 + u1 * QuantityI0J1K1)) +
+        s1 * (t0 * (u0 * QuantityI1J0K0 + u1 * QuantityI1J0K1) + t1 * (u0 * QuantityI1J1K0 + u1 * QuantityI1J1K1));
+}

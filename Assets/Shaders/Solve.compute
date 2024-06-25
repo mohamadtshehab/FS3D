@@ -6,44 +6,997 @@ StructuredBuffer<float3> X0;
 float A;
 float C;
 int Iterations;
-int N;
+int N; // N represents the size in one dimension (assuming a cubic grid N x N x N)
 
 int index(int x, int y, int z) {
-    return (x) + (y) * (N) + (z) * (N) * (N);
+    return x + (y * N) + (z * N * N);
 }
 
-[numthreads(8, 8, 1)]
+[numthreads(8, 8, 8)]
 void Solve(uint3 id : SV_DispatchThreadID) {
-    int z = id.z;
-    if (id.x >= N || id.y >= N || z >= N)
-        return;
-
     float cRecip = 1.0f / C;
+    RWStructuredBuffer<float3> temp = X;
+    float3 q0C = X0[index(id.x, id.y, id.z)];
+    float3 qRight = float3(0, 0, 0);
+    float3 qLeft = float3(0, 0, 0);
+    float3 qTop = float3(0, 0, 0);
+    float3 qBottom = float3(0, 0, 0);
+    float3 qFront = float3(0, 0, 0);
+    float3 qBack = float3(0, 0, 0);
 
-    for (int iter = 0; iter < Iterations; ++iter) {
-        float3 q0C = X0[index(id.x, id.y, z)];
-        float3 qRight = float3(0, 0, 0);
-        float3 qLeft = float3(0, 0, 0);
-        float3 qTop = float3(0, 0, 0);
-        float3 qBottom = float3(0, 0, 0);
-        float3 qBack = float3(0, 0, 0);
-        float3 qFront = float3(0, 0, 0);
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
 
-        if (id.x + 1 < N)
-            qRight = X[index(id.x + 1, id.y, z)];
-        if (id.x > 0)
-            qLeft = X[index(id.x - 1, id.y, z)];
-        if (id.y + 1 < N)
-            qTop = X[index(id.x, id.y + 1, z)];
-        if (id.y > 0)
-            qBottom = X[index(id.x, id.y - 1, z)];
-        if (z + 1 < N)
-            qFront = X[index(id.x, id.y, z + 1)];
-        if (z > 0)
-            qBack = X[index(id.x, id.y, z - 1)];
+    float3 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
 
-        float3 newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
-        Solution[index(id.x, id.y, z)] = newValue;
-        X[index(id.x, id.y, z)] = newValue;
-    }
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = Solution[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = Solution[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = Solution[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = Solution[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = Solution[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = Solution[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    temp[index(id.x, id.y, id.z)] = newValue;
+
+    if (id.x + 1 < N)
+        qRight = temp[index(id.x + 1, id.y, id.z)];
+    if (id.x > 0)
+        qLeft = temp[index(id.x - 1, id.y, id.z)];
+    if (id.y + 1 < N)
+        qTop = temp[index(id.x, id.y + 1, id.z)];
+    if (id.y > 0)
+        qBottom = temp[index(id.x, id.y - 1, id.z)];
+    if (id.z + 1 < N)
+        qFront = temp[index(id.x, id.y, id.z + 1)];
+    if (id.z > 0)
+        qBack = temp[index(id.x, id.y, id.z - 1)];
+
+    newValue = (q0C + A * (qRight + qLeft + qTop + qBottom + qFront + qBack)) * cRecip;
+    Solution[index(id.x, id.y, id.z)] = newValue;
 }
