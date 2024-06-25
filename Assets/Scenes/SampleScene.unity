@@ -341,8 +341,8 @@ MonoBehaviour:
   Cube: {fileID: 0}
   N: 64
   TimeStep: 0.1
-  Iterations: 1
-  Diffusion: 0
+  Iterations: 50
+  Diffusion: 0.01
   Viscosity: 0
   SliceCount: 63
 --- !u!4 &1362900226
@@ -352,7 +352,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1362900224}
-  m_LocalRotation: {x: 0, y: 0.2588191, z: 0, w: 0.9659258}
+  m_LocalRotation: {x: -0, y: 0.2588191, z: -0, w: 0.9659258}
   m_LocalPosition: {x: 0.24236465, y: 0.07263014, z: 0.9317858}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

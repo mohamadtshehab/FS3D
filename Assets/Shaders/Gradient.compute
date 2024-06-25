@@ -5,7 +5,7 @@
 RWStructuredBuffer<float3> ResultingVelocity;
 StructuredBuffer<float3> Pressure;
 StructuredBuffer<float3> Velocity;
-StructuredBuffer<bool> Solid;
+StructuredBuffer<int> Solid;
 int N;
 
 int index(int x, int y, int z) {

@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -104,7 +105,7 @@ public class FluidSimulation : MonoBehaviour
         ResultingVelocity = CreateComputeBuffer();
 
         Solid = CreateComputeBuffer("int");
-        SetSolidVoxels(Solid);
+        SetRandomComputeBufferData(Solid, "int");
 
         DensityTexture = CreateRenderTexture(N);
         InitializeRandomRenderTexture(DensityTexture);
@@ -138,45 +139,71 @@ public class FluidSimulation : MonoBehaviour
         cb.SetData(data);
     }
 
-    void SetRandomComputeBufferData(ComputeBuffer cb)
+    void SetRandomComputeBufferData(ComputeBuffer cb, string dataType = "vector")
     {
         int size = N * N * N;
-        System.Random rand = new System.Random();
-        Vector3[] data = new Vector3[size];
-        for (int i = 0; i < size; i++)
-        {
-            float x = (float)rand.NextDouble();
-            float y = (float)rand.NextDouble();
-            float z = (float)rand.NextDouble();
-            data[i] = new Vector3(x, y, z);
-        }
-        cb.SetData(data);
-    }
+        int xStart = (int) (N - 20);
+        int xEnd = xStart + 19 ;
+        int yStart = xStart;
+        int yEnd = yStart + 19;
+        int zStart = xStart;
+        int zEnd = zStart + 19;
 
-    void SetSolidVoxels(ComputeBuffer cb)
-    {
-        int[] data = new int[N * N * N];
-        int start = (int) (N / 2);
-        int end = (int) (N / 2 + 5);
-        for (int z = 0; z < N; ++z)
+
+        if (dataType == "vector")
         {
-            for (int y= 0; y < N; ++y)
+            System.Random rand = new System.Random();
+            Vector3[] data = new Vector3[size];
+            for (int z = 0; z < N; ++z)
             {
-                for (int x = 0; x < N; ++x)
+                for (int y = 0; y < N; ++y)
                 {
-                    if ( x >= start && x <= end && y >= start && y <= end && z >= start && z <= end)
+                    for (int x = 0; x < N; ++x)
                     {
-                        data[Index(x, y, z)] = 1;
-                    }
-                    else
-                    {
-                        data[Index(x, y, z)] = 0;
+                        bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                        if (condition == true)
+                        {
+                            data[Index(x, y, z)] = new Vector3(0, 0, 0);
+                        }
+                        else
+                        {
+                            float r = (float)rand.NextDouble();
+                            float g = (float)rand.NextDouble();
+                            float b = (float)rand.NextDouble();
+                            data[Index(x, y, z)] = new Vector3(r, g, b);
+                        }
                     }
                 }
             }
+            cb.SetData(data);
         }
-        cb.SetData(data);
+        else
+        {
+            int[] data = new int[N * N * N];
+
+
+            for (int z = 0; z < N; ++z)
+            {
+                for (int y = 0; y < N; ++y)
+                {
+                    for (int x = 0; x < N; ++x)
+                    {
+                        bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                        if (condition == true)
+                        {
+                            data[Index(x, y, z)] = 1;
+                        }
+                        else
+                        {
+                            data[Index(x, y, z)] = 0;
+                        }
+                    }
+                }
+            }
+            cb.SetData(data);
+        }
     }
+
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
     {
         Texture3D t = CreateTexture3D(N);
@@ -285,11 +312,7 @@ public class FluidSimulation : MonoBehaviour
         SolveShader.SetFloat("A", a);
         SolveShader.SetFloat("C", c);
         SolveShader.SetInt("Iterations", Iterations);
-        //for (int i = 0; i < Iterations; i++)
-        //{
-            DispatchShader(SolveShader, kernel);
-            //Copy(SolutionStorage, x);
-        //}
+        DispatchShader(SolveShader, kernel);
         return SolutionStorage;
     }
 
@@ -389,7 +412,7 @@ public class FluidSimulation : MonoBehaviour
 
     int Index(int x, int y, int z)
     {
-        return x + (y * N) + (y * N * N);
+        return x + (y * N) + (z * N * N);
     }
 
 }
