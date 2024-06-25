@@ -6,11 +6,11 @@
 RWStructuredBuffer<float3> Target;
 StructuredBuffer<float3> Source;
 int N;
-int index(int x, int y){
-    return (x) + (y) *(N);
+int index(int x, int y, int z){
+    return (x) + (y) * (N) + z * N * N;
     }
-[numthreads(8, 8, 1)]
+[numthreads(8, 8, 8)]
 void Copy (uint3 id : SV_DispatchThreadID)
 {
-    Target[index(id.x, id.y)] = Source[index(id.x, id.y)];
+    Target[index(id.x, id.y, id.z)] = Source[index(id.x, id.y, id.z)];
 }
