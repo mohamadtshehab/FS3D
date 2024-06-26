@@ -9,9 +9,8 @@ public class cameraMovement : MonoBehaviour
     {
 
     }
-    public float speed = 5.0f;
-    private Vector3 dragOrigin;
-    public float sensitivity = 5f;
+    public float speed = 3.0f;
+    public float sensitivity = 3f;
     private float rotationX = 0.0f;
     private float rotationY = 0.0f;
 

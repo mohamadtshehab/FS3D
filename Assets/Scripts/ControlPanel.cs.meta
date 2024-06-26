@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 91972dabe2aa15d4eb3f5465b5305113
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - gridSizeInput: {fileID: 6417028452359846279, guid: bd576ca02a4f75b498d70126ec763acd, type: 3}
+  - velocitySlider: {fileID: 6760916893579547621, guid: 7d5976d57fba5114f914eb4c7ec7e1d6, type: 3}
+  - velocityValue: {fileID: 2243053853909868946, guid: b013b50d6d27c0c43a251e2c7c1b0fd6, type: 3}
+  - diffusionSlider: {fileID: 7012179747126941827, guid: fc97b24db1d9c774392e890f0694ce1a, type: 3}
+  - diffusionValue: {fileID: 7573489112672268521, guid: 7dd662f31450cba408769c4b389c13a8, type: 3}
+  - rgbToggle: {fileID: 573250664088483208, guid: c84afe49601dd0e459473e57cd38c07d, type: 3}
+  - toggleValue: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
