@@ -138,10 +138,10 @@ public class FluidSimulation : MonoBehaviour
         //RenderDensity = CreateRenderTexture(N);
         //InitializeRenderTexture(RenderDensity, UnityEngine.Color.black);
         // Initialize Velocity
-        SetRandomComputeBufferData(Velocity, 1);
-        SetRandomComputeBufferData(PreviousVelocity, 1);
-        SetRandomComputeBufferData(Density, 0.9f);
-        SetRandomComputeBufferData(PreviousDensity, 1);
+        SetVelocity(Velocity);
+        SetComputeBufferData(PreviousVelocity);
+        SetDensity(Density);
+        SetComputeBufferData(PreviousDensity);
         SetRandomComputeBufferData(P, 1);
         SetRandomComputeBufferData(Temperature, 23,"float");
 
@@ -283,6 +283,70 @@ public class FluidSimulation : MonoBehaviour
         }
     }
 
+    void SetVelocity(ComputeBuffer cb)
+    {
+        int size = N * N * N;
+        int xStart = (int)(N - 20);
+        int xEnd = xStart + 19;
+        int yStart = xStart;
+        int yEnd = yStart + 19;
+        int zStart = xStart;
+        int zEnd = zStart + 19;
+
+        System.Random rand = new System.Random();
+        Vector3[] data = new Vector3[size];
+        for (int z = 0; z < N; ++z)
+        {
+            for (int y = 0; y < N; ++y)
+            {
+                for (int x = 0; x < N; ++x)
+                {
+                    bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                    if (condition == true)
+                    {
+                        data[Index(x, y, z)] = new Vector3(0, 0, 0);
+                    }
+                    else
+                    {
+                        float r = (float)rand.NextDouble();
+                        float g = (float)rand.NextDouble();
+                        float b = (float)rand.NextDouble();
+                        data[Index(x, y, z)] = new Vector3(r, 0f, 0f);
+                    }
+                }
+            }
+        }
+        cb.SetData(data);
+    }
+    void SetDensity(ComputeBuffer cb)
+    {
+        int size = N * N * N;
+
+        System.Random rand = new System.Random();
+        Vector3[] data = new Vector3[size];
+        for (int z = 0; z < N; ++z)
+        {
+            for (int y = 0; y < N; ++y)
+            {
+                bool yes = true;
+                for (int x = 0; x < N; ++x)
+                {
+
+                    data[Index(x, y, z)] = new Vector3(0, 0, 0);
+                    if (x <= 10 && z >= 20 && z <= 40  && y < 10/*(int) (N / 2) - 20 && y < (int) (N /2) - 20*/)
+                    {
+                            if (yes)
+                            {
+                                data[Index(x, y, z)] = new Vector3(1f, 1f, 1f);
+                            }
+                            // yes = !yes; 
+                    }
+
+                }
+            }
+        }
+        cb.SetData(data);
+    }
 
 
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
