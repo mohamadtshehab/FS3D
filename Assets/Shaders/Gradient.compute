@@ -51,5 +51,5 @@ void Gradient(uint3 id : SV_DispatchThreadID) {
 
     float3 pressureGradient = float3(rightPressure - leftPressure, topPressure - bottomPressure, frontPressure - backPressure);
 
-    ResultingVelocity[index(id.x, id.y, id.z)] = float3(currentVelocity - 0.5f * pressureGradient * N);
+    ResultingVelocity[index(id.x, id.y, id.z)] = float3(currentVelocity - 0.5f * pressureGradient);
 }

@@ -5,7 +5,6 @@ RWStructuredBuffer<float3> X;
 StructuredBuffer<float3> X0;
 float A;
 float C;
-int Iterations;
 int N; // N represents the size in one dimension (assuming a cubic grid N x N x N)
 
 int index(int x, int y, int z) {

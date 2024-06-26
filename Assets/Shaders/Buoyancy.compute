@@ -1,0 +1,31 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Buoyancy
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float3> ResultingVelocity;
+StructuredBuffer<float3> Velocity;
+StructuredBuffer<float> Temperature;
+float RoomTemperature;
+float GasMolarMass;
+float G;
+float Pressure;
+float R;
+int N;
+int index(int x, int y, int z) {
+    return x + (y * N) + (z * N * N);
+}
+
+[numthreads(8,8,8)]
+void Buoyancy (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+
+    float factor = (Pressure * GasMolarMass * G) / R;
+    float RoomTemperatureReciprocal = 1 / RoomTemperature;
+    float TemperatureReciprocal = 1 / Temperature[index(id.x, id.y, id.z)];
+    float3 normalY = float3(0, 0, 1);
+    float3 force = factor * (RoomTemperatureReciprocal - TemperatureReciprocal) * normalY;
+    force = force / (float) (N * N * N);
+    ResultingVelocity[index(id.x, id.y, id.z)] = Velocity[index(id.x, id.y, id.z)] + force;
+}
