@@ -9,10 +9,11 @@ public class FluidSimulation : MonoBehaviour
     public ComputeShader SolveShader;
     public ComputeShader DivergeShader;
     public ComputeShader GradientShader;
-    private ComputeShader AddDensityShader;
-    private ComputeShader AddVelocityShader;
+    public ComputeShader AddDensityShader;
+    public ComputeShader AddVelocityShader;
     public ComputeShader CopyShader;
     public ComputeShader RenderizeDensityShader;
+    public ComputeShader BuoyancyShader;
 
     //It's like temp.. but it is not.
     public ComputeBuffer AdvectionStorage;
@@ -21,15 +22,16 @@ public class FluidSimulation : MonoBehaviour
     public ComputeBuffer GradientStorage;
     public ComputeBuffer ResultingDensity;
     public ComputeBuffer ResultingVelocity;
-
+    public ComputeBuffer BuoyancyStorage;
     //The quantities that the compute shader will read from, and also, finally, store in.
-    public ComputeBuffer Pressure;
+    public ComputeBuffer P;
     public ComputeBuffer PreviousVelocity;
     public ComputeBuffer Velocity;
     public ComputeBuffer Density;
     public ComputeBuffer PreviousDensity;
+    public ComputeBuffer Temperature;
 
-    public ComputeBuffer Solid;
+    private ComputeBuffer Solid;
 
     public RenderTexture DensityTexture;
     public Material VolumeMaterial;
@@ -39,10 +41,16 @@ public class FluidSimulation : MonoBehaviour
     //Constants.
     public int N;
     public float TimeStep;
-    public int Iterations;
     public float Diffusion;
     public float Viscosity;
-    public int SliceCount;
+    private int SliceCount;
+
+    public float RoomTemperature;
+    public float GasMolarMass;
+    public float G;
+    public float Pressure;
+    public float R;
+
     void Start()
     {
         InitializeQuantities();
@@ -52,11 +60,50 @@ public class FluidSimulation : MonoBehaviour
 
     void Update()
     {
+        
         Pipeline();
     }
 
+    //public float Normalize(float value, float minValue, float maxValue)
+    //{
+    //    return (value - minValue) / (maxValue - minValue);
+    //}
+    //public void NormalizeValues()
+    //{
+    //    float minTemperature = -100;
+    //    float maxTemperature = 100;
+    //    RoomTemperature = Normalize(RoomTemperature, minTemperature, maxTemperature);
+
+    //    float minMolarMass = 10;
+    //    float maxMolarMass = 0;
+    //    GasMolarMass = Normalize(GasMolarMass, minMolarMass, maxMolarMass);
+
+    //    float minPressure = 0;
+    //    float maxPressure = 50;
+    //    Pressure = Normalize(GasMolarMass, minPressure, maxPressure);
+
+    //    float minG = 0;
+    //    float maxG = 20;
+    //    G = Normalize(GasMolarMass, minG, maxG);
+
+    //    float minR = 0;
+    //    float maxR = 50;
+    //    R = Normalize(GasMolarMass, minR, maxR);
+
+    //    float minDiffusion = 0;
+    //    float maxDiffusion = 50;
+    //    R = Normalize(GasMolarMass, minR, maxR);
+    //    float minR = 0;
+    //    float maxR = 50;
+    //    R = Normalize(GasMolarMass, minR, maxR);
+
+
+
+    //    // Repeat for other variables...
+    //}
     void BindMaterial()
     {
+        SliceCount = N - 1;
         for (int i = 0; i < SliceCount; i++)
         {
             float sliceDepth = (float)i / (SliceCount - 1);
@@ -83,19 +130,20 @@ public class FluidSimulation : MonoBehaviour
         // Initialize RenderTexture
         Velocity = CreateComputeBuffer();
         PreviousVelocity = CreateComputeBuffer();
-        Pressure = CreateComputeBuffer();
+        P = CreateComputeBuffer();
         Density = CreateComputeBuffer();
         PreviousDensity = CreateComputeBuffer();
+        Temperature = CreateComputeBuffer("float");
 
         //RenderDensity = CreateRenderTexture(N);
         //InitializeRenderTexture(RenderDensity, UnityEngine.Color.black);
         // Initialize Velocity
-        SetRandomComputeBufferData(Velocity);
-        SetRandomComputeBufferData(PreviousVelocity);
-        SetRandomComputeBufferData(Density);
-        SetRandomComputeBufferData(PreviousDensity);
-        SetRandomComputeBufferData(Pressure);
-
+        SetRandomComputeBufferData(Velocity, 1);
+        SetRandomComputeBufferData(PreviousVelocity, 1);
+        SetRandomComputeBufferData(Density, 0.9f);
+        SetRandomComputeBufferData(PreviousDensity, 1);
+        SetRandomComputeBufferData(P, 1);
+        SetRandomComputeBufferData(Temperature, 23,"float");
 
         AdvectionStorage = CreateComputeBuffer();
         SolutionStorage = CreateComputeBuffer();
@@ -103,9 +151,10 @@ public class FluidSimulation : MonoBehaviour
         GradientStorage = CreateComputeBuffer();
         ResultingDensity = CreateComputeBuffer();
         ResultingVelocity = CreateComputeBuffer();
+        BuoyancyStorage = CreateComputeBuffer();
 
         Solid = CreateComputeBuffer("int");
-        SetRandomComputeBufferData(Solid, "int");
+        SetRandomComputeBufferData(Solid, 1, "int");
 
         DensityTexture = CreateRenderTexture(N);
         InitializeRandomRenderTexture(DensityTexture);
@@ -120,9 +169,13 @@ public class FluidSimulation : MonoBehaviour
         {
             cb = new ComputeBuffer(N * N * N, sizeof(float) * 3);
         }
-        else
+        else if (dataType == "int")
         {
             cb = new ComputeBuffer(N * N * N, sizeof(int));
+        }
+        else
+        {
+            cb = new ComputeBuffer(N * N * N, sizeof(float));
         }
         return cb;
     }
@@ -139,7 +192,7 @@ public class FluidSimulation : MonoBehaviour
         cb.SetData(data);
     }
 
-    void SetRandomComputeBufferData(ComputeBuffer cb, string dataType = "vector")
+    void SetRandomComputeBufferData(ComputeBuffer cb, float factor, string dataType = "vector")
     {
         int size = N * N * N;
         int xStart = (int) (N - 20);
@@ -167,9 +220,9 @@ public class FluidSimulation : MonoBehaviour
                         }
                         else
                         {
-                            float r = (float)rand.NextDouble();
-                            float g = (float)rand.NextDouble();
-                            float b = (float)rand.NextDouble();
+                            float r = (float)rand.NextDouble() * factor;
+                            float g = (float)rand.NextDouble() * factor;
+                            float b = (float)rand.NextDouble() * factor;
                             data[Index(x, y, z)] = new Vector3(r, g, b);
                         }
                     }
@@ -177,7 +230,7 @@ public class FluidSimulation : MonoBehaviour
             }
             cb.SetData(data);
         }
-        else
+        else if (dataType == "int")
         {
             int[] data = new int[N * N * N];
 
@@ -202,7 +255,35 @@ public class FluidSimulation : MonoBehaviour
             }
             cb.SetData(data);
         }
+
+        else
+        {
+            System.Random rand = new System.Random();
+            float[] data = new float[N * N * N];
+
+            for (int z = 0; z < N; ++z)
+            {
+                for (int y = 0; y < N; ++y)
+                {
+                    for (int x = 0; x < N; ++x)
+                    {
+                        bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                        if (condition == true)
+                        {
+                            data[Index(x, y, z)] = 0;
+                        }
+                        else
+                        {
+                            data[Index(x, y, z)] = (float) rand.NextDouble() * factor;
+                        }
+                    }
+                }
+            }
+            cb.SetData(data);
+        }
     }
+
+
 
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
     {
@@ -311,7 +392,6 @@ public class FluidSimulation : MonoBehaviour
         SolveShader.SetBuffer(kernel, "X0", x0);
         SolveShader.SetFloat("A", a);
         SolveShader.SetFloat("C", c);
-        SolveShader.SetInt("Iterations", Iterations);
         DispatchShader(SolveShader, kernel);
         return SolutionStorage;
     }
@@ -354,7 +434,7 @@ public class FluidSimulation : MonoBehaviour
 
     ComputeBuffer Diffuse(ComputeBuffer x, ComputeBuffer x0, float diffusion)
     {
-        float a = TimeStep * diffusion * (N - 2) * (N - 2);
+        float a = TimeStep * diffusion;
         return Solve(x, x0, a, 1 + 6 * a);
     }
 
@@ -362,9 +442,26 @@ public class FluidSimulation : MonoBehaviour
     {
         ComputeBuffer divergence = Diverge(velocity);
 
-        ComputeBuffer solvedPressure = Solve(Pressure, divergence, 1, 6);
+        ComputeBuffer solvedPressure = Solve(P, divergence, 1, 6);
 
         return Gradient(velocity, solvedPressure);
+    }
+
+    ComputeBuffer AddBuoyancy()
+    {
+        int kernel = BuoyancyShader.FindKernel("Buoyancy");
+        BuoyancyShader.SetBuffer(kernel, "ResultingVelocity", BuoyancyStorage);
+        BuoyancyShader.SetBuffer(kernel, "Velocity", Velocity);
+        BuoyancyShader.SetBuffer(kernel, "Temperature", Temperature);
+        BuoyancyShader.SetInt("N", N);
+        BuoyancyShader.SetFloat("R", R);
+        BuoyancyShader.SetFloat("G", G);
+        BuoyancyShader.SetFloat("RoomTemperature", RoomTemperature);
+        BuoyancyShader.SetFloat("Pressure", Pressure);
+        BuoyancyShader.SetFloat("GasMolarMass", GasMolarMass);
+        DispatchShader(BuoyancyShader, kernel);
+
+        return BuoyancyStorage;
     }
 
     public void Copy(ComputeBuffer source, ComputeBuffer target)
@@ -395,8 +492,9 @@ public class FluidSimulation : MonoBehaviour
 
         //Advect current velocity over previous velocity (result is stored in current velocity)
         ComputeBuffer advectedCurrentVelocity = Advect(Velocity, PreviousVelocity);
+        ComputeBuffer buoyancyVelocity = AddBuoyancy();
         //Project current advected velocity (Result is stored in current velocity)
-        ComputeBuffer correctedCurrentVelocity = Project(advectedCurrentVelocity);
+        ComputeBuffer correctedCurrentVelocity = Project(buoyancyVelocity);
         Copy(correctedCurrentVelocity, Velocity);
 
         //Diffuse Previous Density over The current Density (Result is stored in previous Density)

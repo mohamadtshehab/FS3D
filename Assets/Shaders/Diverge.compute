@@ -104,5 +104,5 @@ void Diverge(uint3 id : SV_DispatchThreadID) {
         }
     }
 
-    Divergence[index(id.x, id.y, id.z)] = -0.5f * (rightX - leftX + topY - bottomY + frontZ - backZ) * N;
+    Divergence[index(id.x, id.y, id.z)] = -0.5f * (rightX - leftX + topY - bottomY + frontZ - backZ);
 }
