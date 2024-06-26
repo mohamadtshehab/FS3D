@@ -51,7 +51,9 @@ Shader "Custom/VolumeShader"
                 if (density.r < threshold || density.g  < threshold || density.b < threshold){
                     discard;
                     }
+
                 return fixed4(density.r, density.r, density.r, density.g);
+
             }
             ENDCG
         }
