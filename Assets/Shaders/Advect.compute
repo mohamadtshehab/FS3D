@@ -19,18 +19,18 @@ void Advect(uint3 id : SV_DispatchThreadID) {
     float3 coordinates = float3(id.x, id.y, id.z);
     float3 XYZ = coordinates - dtVec * ToAdvectOverVelocity[index(id.x, id.y, id.z)];
 
-    if (XYZ.x < 0.5f) XYZ.x = 0.5f;
-    if (XYZ.x > nFloat + 0.5f) XYZ.x = nFloat + 0.5f;
+    // if (XYZ.x < 0.5f) XYZ.x = 0.5f;
+    // if (XYZ.x > nFloat + 0.5f) XYZ.x = nFloat + 0.5f;
     int i0 = floor(XYZ.x);
     int i1 = i0 + 1;
 
-    if (XYZ.y < 0.5f) XYZ.y = 0.5f;
-    if (XYZ.y > nFloat + 0.5f) XYZ.y = nFloat + 0.5f;
+    // if (XYZ.y < 0.5f) XYZ.y = 0.5f;
+    // if (XYZ.y > nFloat + 0.5f) XYZ.y = nFloat + 0.5f;
     int j0 = floor(XYZ.y);
     int j1 = j0 + 1;
 
-    if (XYZ.z < 0.5f) XYZ.z = 0.5f;
-    if (XYZ.z > nFloat + 0.5f) XYZ.z = nFloat + 0.5f;
+    // if (XYZ.z < 0.5f) XYZ.z = 0.5f;
+    // if (XYZ.z > nFloat + 0.5f) XYZ.z = nFloat + 0.5f;
     int k0 = floor(XYZ.z);
     int k1 = k0 + 1;
 

@@ -52,6 +52,7 @@ public class FluidSimulation : MonoBehaviour
 
     void Update()
     {
+        SetDensity(Density);
         Pipeline();
     }
 
@@ -90,10 +91,11 @@ public class FluidSimulation : MonoBehaviour
         //RenderDensity = CreateRenderTexture(N);
         //InitializeRenderTexture(RenderDensity, UnityEngine.Color.black);
         // Initialize Velocity
-        SetRandomComputeBufferData(Velocity);
-        SetRandomComputeBufferData(PreviousVelocity);
-        SetRandomComputeBufferData(Density);
-        SetRandomComputeBufferData(PreviousDensity);
+        SetVelocity(Velocity);
+        SetComputeBufferData(PreviousVelocity);
+      //  SetRandomComputeBufferData(Density);
+        SetDensity(Density);
+        SetComputeBufferData(PreviousDensity);
         SetRandomComputeBufferData(Pressure);
 
 
@@ -110,7 +112,7 @@ public class FluidSimulation : MonoBehaviour
         DensityTexture = CreateRenderTexture(N);
         InitializeRandomRenderTexture(DensityTexture);
 
-        
+
     }
 
     ComputeBuffer CreateComputeBuffer(string dataType = "vector")
@@ -142,8 +144,8 @@ public class FluidSimulation : MonoBehaviour
     void SetRandomComputeBufferData(ComputeBuffer cb, string dataType = "vector")
     {
         int size = N * N * N;
-        int xStart = (int) (N - 20);
-        int xEnd = xStart + 19 ;
+        int xStart = (int)(N - 20);
+        int xEnd = xStart + 19;
         int yStart = xStart;
         int yEnd = yStart + 19;
         int zStart = xStart;
@@ -204,6 +206,74 @@ public class FluidSimulation : MonoBehaviour
         }
     }
 
+
+    void SetVelocity(ComputeBuffer cb)
+    {
+        int size = N * N * N;
+        int xStart = (int)(N - 20);
+        int xEnd = xStart + 19;
+        int yStart = xStart;
+        int yEnd = yStart + 19;
+        int zStart = xStart;
+        int zEnd = zStart + 19;
+
+        System.Random rand = new System.Random();
+        Vector3[] data = new Vector3[size];
+        for (int z = 0; z < N; ++z)
+        {
+            for (int y = 0; y < N; ++y)
+            {
+                for (int x = 0; x < N; ++x)
+                {
+                    bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                    if (condition == true)
+                    {
+                        data[Index(x, y, z)] = new Vector3(0, 0, 0);
+                    }
+                    else
+                    {
+                        float r = (float)rand.NextDouble();
+                        float g = (float)rand.NextDouble();
+                        float b = (float)rand.NextDouble();
+                        data[Index(x, y, z)] = new Vector3(r, 0.001f, 0.001f);
+                    }
+                }
+            }
+        }
+        cb.SetData(data);
+    }
+    void SetDensity(ComputeBuffer cb)
+    {
+        int size = N * N * N;
+
+        System.Random rand = new System.Random();
+        Vector3[] data = new Vector3[size];
+        for (int z = 0; z < N; ++z)
+        {
+            for (int y = 0; y < N; ++y)
+            { 
+                bool yes = true; 
+                for (int x = 0; x < N; ++x)
+                {
+
+                    data[Index(x, y, z)] = new Vector3(0, 0, 0);
+                    if (x <= 10)
+                    {
+                        if (y % 3 == 0)
+                        {
+                            if (yes)
+                            {
+                                data[Index(x, y, z)] = new Vector3(0.5f, 0.5f, .5f);
+                            }
+                           // yes = !yes; 
+                        }
+                    }
+
+                }
+            }
+        }
+        cb.SetData(data);
+    }
     void InitializeRenderTexture(RenderTexture rt, UnityEngine.Color color)
     {
         Texture3D t = CreateTexture3D(N);
@@ -217,7 +287,7 @@ public class FluidSimulation : MonoBehaviour
                 }
             }
         }
-            
+
         t.Apply();
         Graphics.Blit(t, rt);
     }
@@ -225,7 +295,7 @@ public class FluidSimulation : MonoBehaviour
     void InitializeRandomRenderTexture(RenderTexture rt)
     {
         Texture3D t = CreateTexture3D(N);
-        for(int z = 0; z < t.depth; z++)
+        for (int z = 0; z < t.depth; z++)
         {
             for (int y = 0; y < t.height; y++)
             {
@@ -354,7 +424,7 @@ public class FluidSimulation : MonoBehaviour
 
     ComputeBuffer Diffuse(ComputeBuffer x, ComputeBuffer x0, float diffusion)
     {
-        float a = TimeStep * diffusion * (N - 2) * (N - 2);
+        float a = TimeStep * diffusion * N;
         return Solve(x, x0, a, 1 + 6 * a);
     }
 

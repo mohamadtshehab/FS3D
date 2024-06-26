@@ -339,12 +339,12 @@ MonoBehaviour:
   DensityTexture: {fileID: 0}
   VolumeMaterial: {fileID: 2100000, guid: 9cd877f0e210e79488b0ed8eaa71229e, type: 2}
   Cube: {fileID: 0}
-  N: 64
-  TimeStep: 0.1
+  N: 32
+  TimeStep: 0.5
   Iterations: 50
-  Diffusion: 0.01
-  Viscosity: 0
-  SliceCount: 63
+  Diffusion: 10
+  Viscosity: 10
+  SliceCount: 31
 --- !u!4 &1362900226
 Transform:
   m_ObjectHideFlags: 0
