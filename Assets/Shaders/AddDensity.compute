@@ -1,0 +1,22 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel AddDensity
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float3> Density;
+int N;
+
+int index(int x, int y, int z) {
+    return x + (y * N) + (z * N * N);
+}
+
+[numthreads(8,8,8)]
+void AddDensity (uint3 id : SV_DispatchThreadID)
+{
+
+    if (id.x >= (int) (N / 2) && id.y == (int) (N / 2) && id.z == (int) (N / 2))
+    {
+        Density[index(id.x, id.y, id.z)] =  Density[index(id.x, id.y, id.z)] + float3(1, 1, 1);
+    }
+
+}

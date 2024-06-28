@@ -741,14 +741,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: -0, y: -0.7131259, z: -0, w: 0.70103604}
-  m_LocalPosition: {x: 1.04, y: 0.28, z: 0.01}
+  m_LocalRotation: {x: -0, y: -0.9111166, z: -0, w: 0.4121487}
+  m_LocalPosition: {x: 0.398, y: 0.137, z: 0.261}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: -90.98, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -131.32, z: 0}
 --- !u!114 &963194232
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -801,8 +801,8 @@ MonoBehaviour:
   SolveShader: {fileID: 7200000, guid: e471a51915cde884889fd232394b8d4f, type: 3}
   DivergeShader: {fileID: 7200000, guid: 0a5a879e0aff96340bb865a54d0ba3ae, type: 3}
   GradientShader: {fileID: 7200000, guid: 6f1ec88eaf4caf24b8b51adc7575752d, type: 3}
-  AddDensityShader: {fileID: 0}
-  AddVelocityShader: {fileID: 0}
+  AddDensityShader: {fileID: 7200000, guid: 7754c1f30a7357649b3fb5909220b007, type: 3}
+  AddVelocityShader: {fileID: 7200000, guid: 005cd834eddd0de4cb98fdbfed764e8d, type: 3}
   CopyShader: {fileID: 7200000, guid: 0cac5da3defcff342893d702e08b144d, type: 3}
   RenderizeDensityShader: {fileID: 7200000, guid: 142f094d66906284eb5d0a01f19864c9, type: 3}
   BuoyancyShader: {fileID: 7200000, guid: 083fcabe1fb41044da2178008ea8e981, type: 3}
@@ -810,9 +810,9 @@ MonoBehaviour:
   VolumeMaterial: {fileID: 2100000, guid: 9cd877f0e210e79488b0ed8eaa71229e, type: 2}
   Cube: {fileID: 0}
   N: 64
-  TimeStep: 0.1
-  Diffusion: 1
-  Viscosity: 1
+  TimeStep: 0.3
+  Diffusion: 0
+  Viscosity: 0
   RoomTemperature: 23
   GasMolarMass: 23
   G: 9.8
@@ -826,7 +826,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1362900224}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.59, z: -0.507}
+  m_LocalPosition: {x: 0.05, y: 0.59, z: -0.507}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
