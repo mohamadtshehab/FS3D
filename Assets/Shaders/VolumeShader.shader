@@ -45,7 +45,7 @@ Shader "Custom/VolumeShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float threshold = 0.001f;
+                float threshold = 0;
                 float3 density = tex3D(_VolumeTex, i.texcoord).rgb;
 
                 if (density.r < threshold || density.g  < threshold || density.b < threshold){

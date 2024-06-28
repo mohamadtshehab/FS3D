@@ -1,0 +1,19 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel AddVelocity
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float3> Velocity;
+int N;
+
+int index(int x, int y, int z) {
+    return x + (y * N) + (z * N * N);
+}
+
+[numthreads(8,8,8)]
+void AddVelocity (uint3 id : SV_DispatchThreadID)
+{
+
+            float r = 0.9;
+            Velocity[index(id.x, id.y, id.z)] =  float3(r, 0, 0);
+}

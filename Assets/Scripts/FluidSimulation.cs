@@ -60,7 +60,6 @@ public class FluidSimulation : MonoBehaviour
 
     void Update()
     {
-        
         Pipeline();
     }
 
@@ -195,12 +194,12 @@ public class FluidSimulation : MonoBehaviour
     void SetRandomComputeBufferData(ComputeBuffer cb, float factor, string dataType = "vector")
     {
         int size = N * N * N;
-        int xStart = (int) (N - 20);
+        int xStart = (int) ((N / 2));
         int xEnd = xStart + 19 ;
-        int yStart = xStart;
-        int yEnd = yStart + 19;
-        int zStart = xStart;
-        int zEnd = zStart + 19;
+        int yStart = 0;
+        int yEnd = yStart + 7;
+        int zStart = (int) ((N / 2) - 8);
+        int zEnd = zStart + 10;
 
 
         if (dataType == "vector")
@@ -241,7 +240,7 @@ public class FluidSimulation : MonoBehaviour
                 {
                     for (int x = 0; x < N; ++x)
                     {
-                        bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
+                        bool condition = (x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd);
                         if (condition == true)
                         {
                             data[Index(x, y, z)] = 1;
@@ -544,6 +543,22 @@ public class FluidSimulation : MonoBehaviour
         RenderizeDensityShader.SetBuffer(kernel, "Source", density);
         RenderizeDensityShader.SetInt("N", N);
         DispatchShader(RenderizeDensityShader, kernel);
+    }
+
+    public void AddDensity()
+    {
+        int kernel = AddDensityShader.FindKernel("AddDensity");
+        AddDensityShader.SetBuffer(kernel, "Density", Density);
+        AddDensityShader.SetInt("N", N);
+        DispatchShader(AddDensityShader, kernel);
+    }
+
+    public void AddVelocity()
+    {
+        int kernel = AddVelocityShader.FindKernel("AddVelocity");
+        AddVelocityShader.SetBuffer(kernel, "Velocity", Velocity);
+        AddVelocityShader.SetInt("N", N);
+        DispatchShader(AddVelocityShader, kernel);
     }
 
     public void Pipeline()
