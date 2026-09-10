@@ -10,7 +10,9 @@ public class ControlPanel : MonoBehaviour
     public Slider diffusionSlider;
     public TMP_Text diffusionValue;
     public Toggle rgbToggle;
-    public TMP_Text toggleValue;
+    /// <summary>
+    /// public TMP_Text toggleValue;
+    /// </summary>
 
     private int gridSize;
     private float velocity;
@@ -41,9 +43,9 @@ public class ControlPanel : MonoBehaviour
         }
 
         // Initialize the RGB toggle
-        rgbToggle.onValueChanged.AddListener(OnRgbToggleChanged);
-        toggleValue.text = rgbToggle.isOn.ToString();
-        rgbModeEnabled = rgbToggle.isOn;
+        //rgbToggle.onValueChanged.AddListener(OnRgbToggleChanged);
+        //toggleValue.text = rgbToggle.isOn.ToString();
+        //rgbModeEnabled = rgbToggle.isOn;
     }
 
     void OnVelocityChanged(float value)
@@ -73,7 +75,7 @@ public class ControlPanel : MonoBehaviour
     void OnRgbToggleChanged(bool value)
     {
         rgbModeEnabled = value;
-        toggleValue.text = value.ToString();
+        //toggleValue.text = value.ToString();
     }
 
     public int GetGridSize()
