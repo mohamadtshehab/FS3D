@@ -19,12 +19,13 @@ int index(int x, int y, int z) {
 [numthreads(8,8,8)]
 void Buoyancy (uint3 id : SV_DispatchThreadID)
 {
-    // TODO: insert actual code here!
 
     float factor = (Pressure * GasMolarMass * G) / R;
     float RoomTemperatureReciprocal = 1 / RoomTemperature;
-    float TemperatureReciprocal = 1 / Temperature[index(id.x, id.y, id.z)];
-    float3 normalY = float3(0, 0, 1);
+    int idx = index(id.x, id.y, id.z);
+    float temp = max(Temperature[idx], 1.0f);
+    float TemperatureReciprocal = 1 / temp;
+    float3 normalY = float3(0, 1, 0);
     float3 force = factor * (RoomTemperatureReciprocal - TemperatureReciprocal) * normalY;
     force = force / (float) (N * N * N);
     ResultingVelocity[index(id.x, id.y, id.z)] = Velocity[index(id.x, id.y, id.z)] + force;

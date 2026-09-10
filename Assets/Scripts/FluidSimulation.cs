@@ -43,7 +43,9 @@ public class FluidSimulation : MonoBehaviour
     public float TimeStep;
     public float Diffusion;
     public float Viscosity;
+    public int Iterations = 20;
     private int SliceCount;
+    
 
     public float RoomTemperature;
     public float GasMolarMass;
@@ -269,7 +271,7 @@ public class FluidSimulation : MonoBehaviour
                         bool condition = x >= xStart && x <= xEnd && y >= yStart && y <= yEnd && z >= zStart && z <= zEnd;
                         if (condition == true)
                         {
-                            data[Index(x, y, z)] = 0;
+                            data[Index(x, y, z)] = RoomTemperature;
                         }
                         else
                         {
@@ -450,13 +452,19 @@ public class FluidSimulation : MonoBehaviour
     ComputeBuffer Solve(ComputeBuffer x, ComputeBuffer x0, float a, float c)
     {
         int kernel = SolveShader.FindKernel("Solve");
-        SolveShader.SetBuffer(kernel, "Solution", SolutionStorage);
-        SolveShader.SetBuffer(kernel, "X", x);
-        SolveShader.SetBuffer(kernel, "X0", x0);
         SolveShader.SetFloat("A", a);
         SolveShader.SetFloat("C", c);
-        DispatchShader(SolveShader, kernel);
-        return SolutionStorage;
+        SolveShader.SetInt("N", N);
+
+        for (int i = 0; i < Iterations; i++)
+        {
+            SolveShader.SetBuffer(kernel, "Solution", SolutionStorage);
+            SolveShader.SetBuffer(kernel, "X", x);
+            SolveShader.SetBuffer(kernel, "X0", x0);
+            DispatchShader(SolveShader, kernel);
+            Copy(SolutionStorage, x);
+        }
+        return x;
     }
 
     ComputeBuffer Diverge(ComputeBuffer velocity)
@@ -497,7 +505,7 @@ public class FluidSimulation : MonoBehaviour
 
     ComputeBuffer Diffuse(ComputeBuffer x, ComputeBuffer x0, float diffusion)
     {
-        float a = TimeStep * diffusion;
+        float a = TimeStep * diffusion * (N-2) * (N-2);
         return Solve(x, x0, a, 1 + 6 * a);
     }
 
@@ -563,6 +571,9 @@ public class FluidSimulation : MonoBehaviour
 
     public void Pipeline()
     {
+        ComputeBuffer buoyantVelocity = AddBuoyancy();
+        Copy(buoyantVelocity, Velocity);
+
         //Diffuse Previous Velocity over The current Velocity (Result is stored in previous velocity)
         ComputeBuffer diffusedPreviousVelocity = Diffuse(PreviousVelocity, Velocity, Viscosity);
         //Project diffused Previous Velocity (Result is stored in previous velocity).
