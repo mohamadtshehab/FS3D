@@ -571,9 +571,8 @@ public class FluidSimulation : MonoBehaviour
 
         //Advect current velocity over previous velocity (result is stored in current velocity)
         ComputeBuffer advectedCurrentVelocity = Advect(Velocity, PreviousVelocity);
-        ComputeBuffer buoyancyVelocity = AddBuoyancy();
         //Project current advected velocity (Result is stored in current velocity)
-        ComputeBuffer correctedCurrentVelocity = Project(buoyancyVelocity);
+        ComputeBuffer correctedCurrentVelocity = Project(advectedCurrentVelocity);
         Copy(correctedCurrentVelocity, Velocity);
 
         //Diffuse Previous Density over The current Density (Result is stored in previous Density)
